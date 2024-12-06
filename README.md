@@ -45,3 +45,7 @@ Before using this project, ensure you have the following installed:
 1. Clone the repository:  
    ```bash  
    git clone https://github.com/your-username/your-repository.git  
+
+1. install dependencies:  
+ ```bash  
+ npm install
