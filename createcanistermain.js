@@ -1,8 +1,33 @@
-const { Actor, HttpAgent } = require("@dfinity/agent");
-const { Ed25519KeyIdentity } = require("@dfinity/identity");
-const { ICManagementCanister } = require("@dfinity/ic-management");
-const { Principal } = require("@dfinity/principal");
-require("dotenv").config();
+// const { Actor, HttpAgent } = require("@dfinity/agent");
+// const { Ed25519KeyIdentity } = require("@dfinity/identity");
+// const { ICManagementCanister, InstallMode } = require("@dfinity/ic-management");
+// const { Principal } = require("@dfinity/principal");
+// import { nonNullish } from "@dfinity/utils";
+// import { copyFile, readFile } from "node:fs/promises";
+// require("dotenv").config();
+// const INDEX_WASM_PATH = join(
+//   process.cwd(),
+//   "target",
+//   "ic",
+//   "ckbtc_index.wasm.gz"
+// );
+import { Actor, HttpAgent } from "@dfinity/agent";
+import { Ed25519KeyIdentity } from "@dfinity/identity";
+// import { ICManagementCanister } from "@dfinity/ic-management";
+import pkg from "@dfinity/ic-management"; 
+const { ICManagementCanister, InstallMode } = pkg;
+import { Principal } from "@dfinity/principal";
+import { nonNullish } from "@dfinity/utils";
+import { copyFile, readFile } from "fs/promises";
+import dotenv from "dotenv";
+import { join } from "path";
+
+dotenv.config();
+
+const INDEX_WASM_PATH = join(process.cwd(), "lolwasm_backend.wasm");
+
+console.log("path ", INDEX_WASM_PATH)
+
 
 async function createAgent() {
     const identity = Ed25519KeyIdentity.generate();
@@ -39,6 +64,7 @@ async function createCanister2() {
         process.env["CANISTER_ID"] = newCanisterId.toText();
         canisterStatus(managementCanister, CanisterId);
         fetchCanisterLogs(managementCanister, CanisterId);
+        InstallCanister(managementCanister, CanisterId);
         //  getCanisterInfo(managementCanister, CanisterId);
         //    getBitcoinBalance(managementCanister, CanisterId);
     } catch (error) {
@@ -66,6 +92,26 @@ async function canisterStatus(managementCanister, CanisterId) {
     }
 }
 
+ async function installCanisterCode(canisterId, wasmPath, arg) {
+
+    const { installCode } = ICManagementCanister.create({
+      agent,
+    });
+
+    await installCode({
+      mode: InstallMode.Install,
+      canisterId: Principal.from(canisterId),
+      wasmModule: await readFile(wasmPath),
+      arg: new Uint8Array(arg),
+    });
+
+    try {
+        
+    } catch (err) {
+        console.error("error: ", err)
+    }
+ }
+
 async function fetchCanisterLogs(managementCanister, CanisterId) {
     try {
         if (!CanisterId) {
@@ -83,6 +129,35 @@ async function fetchCanisterLogs(managementCanister, CanisterId) {
             error.message || error
         );
     }
+}
+
+async function InstallCanister(managementCanister, CanisterId) {
+  try {
+    if (!CanisterId) {
+      throw new Error("Cannot fetch installCode: canisterId is not provided.");
+    }
+
+    const canisterPrincipal = Principal.fromText(CanisterId);
+ const arg = []; 
+    console.log(`Fetching logs for canister: ${canisterPrincipal.toText()}`);
+    const wasm = await readFile(INDEX_WASM_PATH);
+    const logs = await managementCanister.installCode({
+      mode: InstallMode.Install,
+      canisterId: canisterPrincipal,
+      wasmModule: wasm,
+      arg: new Uint8Array(arg),
+      
+    });
+    console.log(
+      `installCode for canister ${canisterPrincipal.toText()}:`,
+      logs
+    );
+  } catch (error) {
+    console.error(
+      `Error fetching installCode for canister ${CanisterId || "unknown"}:`,
+      error.message || error
+    );
+  }
 }
 
 
