@@ -64,8 +64,8 @@ async function createCanister2() {
     console.log("New Canister created with ID:", newCanisterId.toText());
     const CanisterId = newCanisterId.toText();
     process.env["CANISTER_ID"] = newCanisterId.toText();
-    // canisterStatus(managementCanister, CanisterId);
-    // fetchCanisterLogs(managementCanister, CanisterId);
+    canisterStatus(managementCanister, CanisterId);
+    fetchCanisterLogs(managementCanister, CanisterId);
     await install(managementCanister, newCanisterId)
     // InstallCanister(managementCanister, CanisterId);
     //  getCanisterInfo(managementCanister, CanisterId);
