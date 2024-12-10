@@ -226,23 +226,24 @@ async function getBitcoinBalance(managementCanister, CanisterId) {
   }
 }
 
-async function install(managementCanister, canisterId) {
-  console.log("installing codee");
 
-  const buffer = await readFile(INDEX_WASM_PATH);
-  const arr = Uint8Array.from(buffer);
+async function install(managementCanister, canisterId) {
+  console.log("Installing code...");
+
+  const wasmBuffer = await readFile(INDEX_WASM_PATH);
+  const wasmModule = new Uint8Array(wasmBuffer);
 
   try {
-  } catch (err) {
-    console.log("error install: ", err);
+    await managementCanister.installCode({
+      mode: InstallMode.Install,
+      canisterId,
+      wasmModule,
+      arg: new Uint8Array(),
+    });
+    console.log("Code installed successfully.");
+  } catch (error) {
+    console.error("Error during code installation:", error.message || error);
   }
-
-  await managementCanister.installCode({
-    mode: InstallMode.Install,
-    canisterId,
-    wasmModule: arr,
-    arg: new Uint8Array(),
-  });
 }
 
 // createCanister2();
