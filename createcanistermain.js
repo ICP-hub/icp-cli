@@ -1,24 +1,10 @@
-// const { Actor, HttpAgent } = require("@dfinity/agent");
-// const { Ed25519KeyIdentity } = require("@dfinity/identity");
-// const { ICManagementCanister, InstallMode } = require("@dfinity/ic-management");
-// const { Principal } = require("@dfinity/principal");
-// import { nonNullish } from "@dfinity/utils";
-// import { copyFile, readFile } from "node:fs/promises";
-// require("dotenv").config();
-// const INDEX_WASM_PATH = join(
-//   process.cwd(),
-//   "target",
-//   "ic",
-//   "ckbtc_index.wasm.gz"
-// );
+
 import { Actor, HttpAgent } from "@dfinity/agent";
 import { Ed25519KeyIdentity } from "@dfinity/identity";
 import {
   ICManagementCanister,
   InstallMode,
 } from "@dfinity/ic-management";
-// import pkg from "@dfinity/ic-management";
-// const { ICManagementCanister, InstallMode } = pkg;
 import { Principal } from "@dfinity/principal";
 import { nonNullish } from "@dfinity/utils";
 import { copyFile, readFile } from "fs/promises";
@@ -259,4 +245,11 @@ async function install(managementCanister, canisterId) {
   });
 }
 
-createCanister2();
+// createCanister2();
+export {
+  createAgent,
+  createCanister2,
+  canisterStatus,
+  fetchCanisterLogs,
+  install,
+};
