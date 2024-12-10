@@ -1,5 +1,5 @@
-const { HttpAgent } = require("@dfinity/agent");
-const { Ed25519KeyIdentity } = require("@dfinity/identity");
+import { HttpAgent } from "@dfinity/agent";
+import { Ed25519KeyIdentity } from "@dfinity/identity";
 
 async function createAgent() {
     const identity = Ed25519KeyIdentity.generate();
@@ -12,8 +12,10 @@ async function createAgent() {
     if (process.env.NODE_ENV !== "production") {
         await agent.fetchRootKey();
     }
+console.log(agent);
 
     return agent;
+    
 }
-
-module.exports = { createAgent };
+createAgent();
+// module.exports = { createAgent };
