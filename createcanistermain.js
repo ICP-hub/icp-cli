@@ -1,5 +1,5 @@
 
-import { Actor, HttpAgent } from "@dfinity/agent";
+import {  HttpAgent } from "@dfinity/agent";
 import { Ed25519KeyIdentity } from "@dfinity/identity";
 import {
   ICManagementCanister,
@@ -23,11 +23,10 @@ async function createAgent() {
     process.env.IC_ENV === "local"
       ? "http://127.0.0.1:4943"
       : "https://ic0.app";
-  const agent = new HttpAgent({
+  const agent = await HttpAgent.create({
     identity,
     host: host,
   });
-
   if (process.env.NODE_ENV !== "production") {
     await agent.fetchRootKey();
   }
@@ -43,9 +42,9 @@ async function createCanister2() {
     const managementCanister = ICManagementCanister.create({ agent });
     console.log("Management Canister Actor:", managementCanister);
     const newCanisterId =
-      await managementCanister.provisionalCreateCanisterWithCycles({
-        cycles: 1000000000000,
-      });
+      await managementCanister.provisionalCreateCanisterWithCycles(
+        { cycles: 1000000000000,}
+      );
 
     console.log("New Canister created with ID:", newCanisterId.toText());
     const CanisterId = newCanisterId.toText();
@@ -80,23 +79,6 @@ async function canisterStatus(managementCanister, CanisterId) {
   }
 }
 
-async function installCanisterCode(canisterId, wasmPath, arg) {
-  const { installCode } = ICManagementCanister.create({
-    agent,
-  });
-
-  await installCode({
-    mode: InstallMode.Install,
-    canisterId: Principal.from(canisterId),
-    wasmModule: await readFile(wasmPath),
-    arg: new Uint8Array(arg),
-  });
-
-  try {
-  } catch (err) {
-    console.error("error: ", err);
-  }
-}
 
 async function fetchCanisterLogs(managementCanister, CanisterId) {
   try {
@@ -117,33 +99,7 @@ async function fetchCanisterLogs(managementCanister, CanisterId) {
   }
 }
 
-async function InstallCanister(managementCanister, CanisterId) {
-  try {
-    if (!CanisterId) {
-      throw new Error("Cannot fetch installCode: canisterId is not provided.");
-    }
 
-    const canisterPrincipal = Principal.fromText(CanisterId);
-    const arg = [];
-    console.log(`Fetching logs for canister: ${canisterPrincipal.toText()}`);
-    const wasm = await readFile(INDEX_WASM_PATH);
-    const logs = await managementCanister.installCode({
-        mode: InstallMode.Install,
-      canisterId: canisterPrincipal,
-      wasmModule: wasm,
-      arg: new Uint8Array(arg),
-    });
-    console.log(
-      `installCode for canister ${canisterPrincipal.toText()}:`,
-      logs
-    );
-  } catch (error) {
-    console.error(
-      `Error fetching installCode for canister ${CanisterId || "unknown"}:`,
-      error.message || error
-    );
-  }
-}
 
 async function getCanisterInfo(managementCanister, CanisterId) {
   try {
