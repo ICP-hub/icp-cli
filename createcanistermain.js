@@ -35,7 +35,7 @@ async function createAgent() {
   return agent;
 }
 
-async function createCanister2() {
+async function createCanister() {
   try {
     const agent = await createAgent();
 
@@ -202,10 +202,9 @@ async function install(managementCanister, canisterId) {
   }
 }
 
-// createCanister2();
 export {
   createAgent,
-  createCanister2,
+  createCanister,
   canisterStatus,
   fetchCanisterLogs,
   install,

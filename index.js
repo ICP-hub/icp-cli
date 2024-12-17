@@ -1,43 +1,7 @@
-#!/usr/bin/env node
 
-// import { createCanister2 } from "./createcanistermain.js";
-// (async () => {
-//   try {
-//     console.log("Starting the canister creation process...");
-//     await createCanister2();
-//     console.log("Canister creation process completed successfully.");
-//   } catch (error) {
-//     console.error(
-//       "An error occurred during the canister creation process:",
-//       error.message || error
-//     );
-//   }
-// })();
-
-// import yargs from "yargs";
-// import { hideBin } from "yargs/helpers";
-// import { createCanister2 } from "./createcanistermain.js";
-
-// const argv = yargs(hideBin(process.argv))
-//   .command("create", "Create a new canister", {}, async () => {
-//     try {
-//       console.log("Starting the canister creation process...");
-//       await createCanister2();
-//       console.log("Canister creation process completed successfully.");
-//     } catch (error) {
-//       console.error(
-//         "An error occurred during the canister creation process:",
-//         error.message || error
-//       );
-//     }
-//   })
-//   .help().argv;
-
-
- 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { createCanister2, install } from "./createcanistermain.js";
+import { createCanister } from "./createcanistermain.js";
 import { createAgent } from "./createAgent.js";
 
 yargs(hideBin(process.argv))
@@ -45,7 +9,7 @@ yargs(hideBin(process.argv))
   .command("deploy", "Create new canister", {}, async () => {
     try {
       console.log("Starting the canister creation process...");
-      await createCanister2();
+      await createCanister();
       console.log("Canister creation process completed successfully.");
     } catch (error) {
       console.error(
