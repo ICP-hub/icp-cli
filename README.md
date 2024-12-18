@@ -19,7 +19,7 @@
 This project is an **npm package** designed to simplify the creation and management of agents and canisters.  
 With this package, users can:  
 1. Create only agents by running `node createAgent`.  
-2. Create canisters and check their status by running CLI Command  `dfx-test deploy`.  
+2. Create canisters and check their status by running CLI Command  `icp deploy`.  
 
 ---  
 

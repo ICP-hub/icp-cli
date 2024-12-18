@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "dfx-test": "./index.js"
+    "icp": "./index.js"
   },
   "author": "Chandan",
   "license": "ISC",
