@@ -14,15 +14,10 @@ import path from 'path';
 dotenv.config();
 
 const FRONTEND_WASM_PATH = join(process.cwd(), "assetstorage.wasm");
-
-console.log("Frontend path is : ", FRONTEND_WASM_PATH);
+const host = process.env.IC_ENV === "local" ? "http://127.0.0.1:4943":"https://ic0.app";
 
 async function createAgent() {
   const identity = Ed25519KeyIdentity.generate();
-  const host =
-    process.env.IC_ENV === "local"
-      ? "http://127.0.0.1:4943"
-      : "https://ic0.app";
   const agent = await HttpAgent.create({
     identity,
     host: host,
@@ -30,26 +25,17 @@ async function createAgent() {
   if (process.env.NODE_ENV !== "production") {
     await agent.fetchRootKey();
   }
-
-  console.log("Agent created:", agent);
   return agent;
 }
 
 async function createFrontendCanister() {
   try {
     const agent = await createAgent();
-
     const managementCanister = ICManagementCanister.create({ agent });
-    console.log("Management Canister Actor:", managementCanister);
     const newFrontendCanisterId =
       await managementCanister.provisionalCreateCanisterWithCycles({
         cycles: 1000000000000,
       });
-
-    console.log(
-      "New Canister created with ID:",
-      newFrontendCanisterId.toText()
-    );
 
     const CanisterId = newFrontendCanisterId.toText();
     process.env["CANISTER_ID"] = newFrontendCanisterId.toText();
@@ -61,7 +47,7 @@ async function createFrontendCanister() {
       agent,
       canisterId: newFrontendCanisterId.toText(),
     });
-    await uploadFrontEndAssets(FrontendCanisterActor);
+    await uploadFrontEndAssets(FrontendCanisterActor,CanisterId);
   } catch (error) {
     console.error("Error creating canister:", error);
   }
@@ -76,8 +62,6 @@ async function canisterStatus(managementCanister, CanisterId) {
     const canisterPrincipal = Principal.fromText(CanisterId);
 
     console.log(`Fetching status for canister: ${canisterPrincipal.toText()}`);
-    const status = await managementCanister.canisterStatus(canisterPrincipal);
-    console.log(`Canister status for ${canisterPrincipal.toText()}:`, status);
   } catch (error) {
     console.error(
       `Error fetching status for canister ${CanisterId || "unknown"}:`,
@@ -94,7 +78,6 @@ async function fetchCanisterLogs(managementCanister, CanisterId) {
 
     const canisterPrincipal = Principal.fromText(CanisterId);
 
-    console.log(`Fetching logs for canister: ${canisterPrincipal.toText()}`);
     const logs = await managementCanister.fetchCanisterLogs(canisterPrincipal);
     console.log(`Logs for canister ${canisterPrincipal.toText()}:`, logs);
   } catch (error) {
@@ -107,7 +90,6 @@ async function fetchCanisterLogs(managementCanister, CanisterId) {
 
 async function install(managementCanister, canisterId) {
   try {
-    console.log("Installing code...");
     const wasmBuffer = await readFile(FRONTEND_WASM_PATH);
     if (!wasmBuffer || wasmBuffer.length === 0) {
       throw new Error("WASM file is empty or could not be read.");
@@ -133,16 +115,16 @@ async function install(managementCanister, canisterId) {
       wasmModule,
       arg,
     });
-    console.log("Code installed successfully.");
-  } catch (error) {
+    } catch (error) {
     console.error("Error during code installation:", error?.message || error);
   }
 }
 
-async function uploadFrontEndAssets(FrontendCanisterActor,) {
+async function uploadFrontEndAssets(FrontendCanisterActor,CanisterId) {
   try {
     const distPath = './dist';
     const files = await getFiles(distPath);
+    console.log("please wait code is installing...");
 
     for (const file of files) {
       const filePath = path.join(distPath, file);
@@ -157,11 +139,17 @@ async function uploadFrontEndAssets(FrontendCanisterActor,) {
         sha256: [], 
         aliased: [],
       };
-
-    console.log(`Uploaded ${fileKey} successfully:`);
-    console.log("please wait code is installing...")
     await FrontendCanisterActor.store(args);
     }
+
+    const blueBold = "\x1b[1;34m"; 
+    const whiteBright = "\x1b[1;37m"; 
+    const reset = "\x1b[0m";
+    
+    console.log(`${whiteBright}Front-end-canister : ${blueBold}http://${CanisterId}.localhost:4943/${reset}`);
+    console.log(`${whiteBright}Front-end-canister : ${blueBold}${host}/?canisterId=${CanisterId}${reset}`);
+    
+
   } catch (error) {
     console.error('Error uploading assets:', error);
   }
