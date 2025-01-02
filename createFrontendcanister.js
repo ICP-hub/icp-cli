@@ -1,16 +1,15 @@
-
-import {  HttpAgent } from "@dfinity/agent";
+import { HttpAgent } from "@dfinity/agent";
 import { Ed25519KeyIdentity } from "@dfinity/identity";
-import {
-  ICManagementCanister,
-  InstallMode,
-} from "@dfinity/ic-management";
+import { ICManagementCanister, InstallMode } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import { readFile } from "fs/promises";
 import dotenv from "dotenv";
 import { join } from "path";
-import { IDL } from '@dfinity/candid';
-
+import { IDL } from "@dfinity/candid";
+import { Actor } from "@dfinity/agent";
+import { idlFactory as frontendIdlFactory } from "./npmpackage_frontend.did.js";
+import fs from 'fs/promises';
+import path from 'path';
 
 dotenv.config();
 
@@ -42,17 +41,27 @@ async function createFrontendCanister() {
 
     const managementCanister = ICManagementCanister.create({ agent });
     console.log("Management Canister Actor:", managementCanister);
-    const newCanisterId =
-      await managementCanister.provisionalCreateCanisterWithCycles(
-        { cycles: 1000000000000,}
-      );
+    const newFrontendCanisterId =
+      await managementCanister.provisionalCreateCanisterWithCycles({
+        cycles: 1000000000000,
+      });
 
-    console.log("New Canister created with ID:", newCanisterId.toText());
-    const CanisterId = newCanisterId.toText();
-    process.env["CANISTER_ID"] = newCanisterId.toText();
+    console.log(
+      "New Canister created with ID:",
+      newFrontendCanisterId.toText()
+    );
+
+    const CanisterId = newFrontendCanisterId.toText();
+    process.env["CANISTER_ID"] = newFrontendCanisterId.toText();
     canisterStatus(managementCanister, CanisterId);
     fetchCanisterLogs(managementCanister, CanisterId);
-    await install(managementCanister, newCanisterId)
+    await install(managementCanister, newFrontendCanisterId);
+
+    const FrontendCanisterActor = Actor.createActor(frontendIdlFactory, {
+      agent,
+      canisterId: newFrontendCanisterId.toText(),
+    });
+    await uploadFrontEndAssets(FrontendCanisterActor);
   } catch (error) {
     console.error("Error creating canister:", error);
   }
@@ -104,7 +113,9 @@ async function install(managementCanister, canisterId) {
       throw new Error("WASM file is empty or could not be read.");
     }
     const initArgs = {
-      owner: Principal.fromText("6ydm4-srext-xsaic-y3v2x-cticp-5n6pf-2meh7-j43r6-rghg7-pt5nd-bqe"),
+      owner: Principal.fromText(
+        "6ydm4-srext-xsaic-y3v2x-cticp-5n6pf-2meh7-j43r6-rghg7-pt5nd-bqe"
+      ),
       name: "assetstorage.wasm",
     };
 
@@ -114,7 +125,7 @@ async function install(managementCanister, canisterId) {
     });
 
     const arg = IDL.encode([candidType], [initArgs]);
-    
+
     const wasmModule = new Uint8Array(wasmBuffer);
     await managementCanister.installCode({
       mode: InstallMode.Install,
@@ -127,6 +138,59 @@ async function install(managementCanister, canisterId) {
     console.error("Error during code installation:", error?.message || error);
   }
 }
+
+async function uploadFrontEndAssets(FrontendCanisterActor,) {
+  try {
+    const distPath = './dist';
+    const files = await getFiles(distPath);
+
+    for (const file of files) {
+      const filePath = path.join(distPath, file);
+      const fileContent = await fs.readFile(filePath);
+      const fileKey = `/${file.replace(/\\/g, '/')}`;
+
+      const args = {
+        key: fileKey,
+        content: new Uint8Array(fileContent),
+        content_type: getMimeType(file),
+        content_encoding: "identity",
+        sha256: [], 
+        aliased: [],
+      };
+
+    console.log(`Uploaded ${fileKey} successfully:`);
+    console.log("please wait code is installing...")
+    await FrontendCanisterActor.store(args);
+    }
+  } catch (error) {
+    console.error('Error uploading assets:', error);
+  }
+}
+
+async function getFiles(dir, fileList = [], baseDir = dir) {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await getFiles(fullPath, fileList, baseDir);
+    } else {
+      const relativePath = path.relative(baseDir, fullPath);
+      fileList.push(relativePath);
+    }
+  }
+  return fileList;
+}
+
+function getMimeType(fileName) {
+  if (fileName.endsWith('.html')) return 'text/html';
+  if (fileName.endsWith('.css')) return 'text/css';
+  if (fileName.endsWith('.js')) return 'application/javascript';
+  if (fileName.endsWith('.svg')) return 'image/svg+xml';
+  if (fileName.endsWith('.png')) return 'image/png';
+  if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) return 'image/jpeg';
+  return 'application/octet-stream';
+}
+
 
 export {
   createAgent,
