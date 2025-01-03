@@ -3,7 +3,7 @@
  
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-// import { createCanister } from "./createcanistermain.js";
+import { createCanister } from "./createcanistermain.js";
 import { createAgent } from "./createAgent.js";
 import { createFrontendCanister } from "./createFrontendcanister.js";
 
@@ -12,7 +12,7 @@ yargs(hideBin(process.argv))
   .command("deploy", "Create new canister", {}, async () => {
     try {
       console.log("Starting the canister creation process...");
-      // await createCanister();
+      await createCanister();
       await createFrontendCanister();
       console.log("Canister creation process completed successfully.");
     } catch (error) {
