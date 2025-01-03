@@ -51,7 +51,7 @@ async function createCanister() {
     process.env["CANISTER_ID"] = newCanisterId.toText();
     canisterStatus(managementCanister, CanisterId);
     fetchCanisterLogs(managementCanister, CanisterId);
-    await install(managementCanister, newCanisterId)
+    await install(managementCanister, newCanisterId);
     // InstallCanister(managementCanister, CanisterId);
     //  getCanisterInfo(managementCanister, CanisterId);
     //    getBitcoinBalance(managementCanister, CanisterId);
