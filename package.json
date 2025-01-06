@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "dfx on JS",
   "bin": {
-    "dfx@node": "./dist/bin/cli.js"
+    "icp": "./dist/bin/cli.js"
   },
   "scripts": {
     "start": "ts-node ./src/bin/cli.ts",
