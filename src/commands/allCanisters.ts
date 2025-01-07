@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import { execSync } from "child_process";
-import { HttpAgent, ManagementCanisterRecord } from "@dfinity/agent";
+import { HttpAgent } from "@dfinity/agent";
 import { Ed25519KeyIdentity } from "@dfinity/identity";
 import { ICManagementCanister, InstallMode } from "@dfinity/ic-management";
 import { readFile } from "fs/promises";
@@ -23,14 +23,6 @@ export const getCanisterDetails = (): CanisterDetail[] => {
     const data = fs.readFileSync(dfxFilePath, "utf-8");
     const dfxConfig = JSON.parse(data);
     const canisters = dfxConfig.canisters || {};
-    Object.keys(canisters).forEach((name) => {
-      console.log("canisters", name);
-      execSync(`dfx canister create ${name}`);
-      console.log(`Building canister: ${name}`);
-      execSync(`dfx build ${name}`, { stdio: "inherit" });
-      execSync(`dfx deploy ${name}`);
-
-    });
 
     const canisterDetails: CanisterDetail[] = Object.keys(canisters).map(
       (name) => {
@@ -68,15 +60,17 @@ export const getCanisterDetails = (): CanisterDetail[] => {
 
 async function createAgent() {
   const identity = Ed25519KeyIdentity.generate();
+  console.log(process.env.DFX_NETWORK)
   const host =
-    process.env.IC_ENV === "local"
+    process.env.DFX_NETWORK == "local"
       ? "http://127.0.0.1:4943"
       : "https://ic0.app";
+      console.log(process.env.DFX_NETWORK)
   const agent = await HttpAgent.create({
     identity,
     host: host,
   });
-  if (process.env.IC_ENV == "local") {
+  if (process.env.DFX_NETWORK == "local") {
     await agent.fetchRootKey();
   }
   return agent;
@@ -84,17 +78,15 @@ async function createAgent() {
 
 export async function createAndInstallCanisters() {
   try {
-    const agent = await createAgent();
-    const managementCanister = ICManagementCanister.create({ agent });
     const canisterDetails = getCanisterDetails();
+    const agent = await createAgent();
+    console.log(process.env.DFX_NETWORK)
+
+    console.log("agent",agent)
+    const managementCanister = ICManagementCanister.create({ agent });
 
     for (const canister of canisterDetails) {
-      const newCanisterId = await managementCanister.provisionalCreateCanisterWithCycles({
-        amount: BigInt(1000000000000),
-      });
-      process.env["CANISTER_ID"] = newCanisterId.toText();
-      
-      await install(managementCanister, newCanisterId, canister.wasmPath);
+      await install(managementCanister, canister.canisterId, canister.wasmPath);
     }
   } catch (error) {
     console.error("Error creating and installing canisters:", error);
@@ -110,7 +102,7 @@ async function install(
     const wasmBuffer = await readFile(wasmPath);
     const wasmModule = new Uint8Array(wasmBuffer);
     await managementCanister.installCode({
-      mode: InstallMode.Install,
+      mode: InstallMode.Upgrade,
       canisterId,
       wasmModule,
       arg: new Uint8Array(),
