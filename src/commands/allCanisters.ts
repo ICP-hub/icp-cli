@@ -11,6 +11,14 @@ import { Actor } from "@dfinity/agent";
 import { tmpdir } from "os";
 import { promises as fsp } from "fs";
 import { createRequire } from "module";
+import getActor from "./getActor.js";
+// @ts-ignore
+// import { idlFactory as frontendIdlFactory } from "./npmpackage_frontend.did.js";
+
+// import { idlFactory } from "./fe_frontend.did.js";
+// import {idlFactory as frontendIdlFactory} from "./fe_frontend.did.d"
+// import { idlFactory as frontendIdlFactory } from "./fe_frontend.did.js";
+
 
 dotenv.config();
 
@@ -42,7 +50,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           `${name}.did.js`
         );
         const wasmFilePath =
-          "/Users/chandankushwaha/dfx-node/assetstorage.wasm";
+          "/Users/pratap/code/kai/dfx-node/src/commands/assetstorage.wasm";
 
         return {
           name,
@@ -105,15 +113,15 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
 async function createAgent(): Promise<HttpAgent> {
   const identity = Ed25519KeyIdentity.generate();
-  const host =
-    process.env.DFX_NETWORK === "local"
-      ? "http://127.0.0.1:4943"
-      : "https://ic0.app";
+  const host = "http://127.0.0.1:4943";
+    // process.env.DFX_NETWORK === "local"
+      // ? "http://127.0.0.1:4943"
+      // : "https://ic0.app";
 
   const agent = new HttpAgent({ identity, host });
-  if (process.env.DFX_NETWORK === "local") {
+  // if (process.env.DFX_NETWORK === "local") {
     await agent.fetchRootKey();
-  }
+  // }
   return agent;
 }
 
@@ -138,18 +146,26 @@ export async function createAndInstallCanisters() {
 
         await install(managementCanister, newCanisterId, canister.wasmPath);
 
-        execSync("npm run build");
-const frontendIdlFactoryPath = path.resolve(canister.frontendIdlFactoryPath);
-const idlFactory = require(frontendIdlFactoryPath).default;
+                execSync("npm run build");
+        // const frontendIdlFactoryPath = path.resolve(canister.frontendIdlFactoryPath);
+        // console.log("fidl: ", frontendIdlFactoryPath);
+        // @ts-ignore
+        // const idlFactory = require(idlFactory).default;
 
 
-        console.log("idlFactory : ", idlFactory);
-        // const FrontendCanisterActor = Actor.createActor(idlFactory, {
+        // console.log("idlFactory : ", idlFactory);
+
+        // @ts-ignore
+        const feActor = getActor(agent, newCanisterId.toText());
+        console.log("acttt", feActor);
+        // const FrontendCanisterActor = Actor.createActor(frontendIdlFactory, {
         //   agent,
         //   canisterId: newCanisterId.toText(),
         // });
 
-        // await uploadFrontEndAssets(FrontendCanisterActor, newCanisterId);
+        // console.log("idl factory is: ", FrontendCanisterActor);
+
+        await uploadFrontEndAssets(feActor, newCanisterId);
       }
     }
   } catch (error) {
@@ -206,8 +222,12 @@ async function uploadFrontEndAssets(
   canisterId: Principal
 ): Promise<void> {
   try {
-    const distPath = "./dist";
+    // const pattt = path.resolve("src");
+    // console.log("sfsd; ", pattt);
+    const distPath = "/Users/pratap/code/kai/fe/src/fe_frontend/dist";
+
     const files = await getFiles(distPath);
+    console.log("files ", files);
     console.log("Please wait, code is installing...");
 
     for (const file of files) {
@@ -261,3 +281,5 @@ function getMimeType(fileName: string): string {
     return "image/jpeg";
   return "application/octet-stream";
 }
+
+
