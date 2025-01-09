@@ -1,13 +1,16 @@
 import path from "path";
 import fs from "fs";
 import { execSync } from "child_process";
-import { readFile } from "fs/promises";
 import dotenv from "dotenv";
 import { HttpAgent } from "@dfinity/agent";
 import { Ed25519KeyIdentity } from "@dfinity/identity";
 import { ICManagementCanister, InstallMode } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import { IDL } from "@dfinity/candid";
+import { Actor } from "@dfinity/agent";
+import { tmpdir } from "os";
+import { promises as fsp } from "fs";
+import { createRequire } from "module";
 
 dotenv.config();
 
@@ -15,72 +18,92 @@ interface CanisterDetail {
   name: string;
   category: string;
   wasmPath: string;
+  frontendIdlFactoryPath?: any;
 }
 
-
-export const getCanisterDetails = (): CanisterDetail[] => {
+export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
   const dfxFilePath = path.resolve("dfx.json");
   try {
-    const data = fs.readFileSync(dfxFilePath, "utf-8");
+    const data = await fs.promises.readFile(dfxFilePath, "utf-8");
     const dfxConfig = JSON.parse(data);
     const canisters = dfxConfig.canisters || {};
-    execSync(`cargo build --release --target wasm32-unknown-unknown`);
+
+    execSync("cargo build --release --target wasm32-unknown-unknown");
 
     const canisterDetails = Object.keys(canisters).map((name) => {
       const type = canisters[name]?.type || "unknown";
       const category = type === "rust" ? "backend" : "frontend";
 
-      const didFileName = `${name}.did`;
-      const didFilePath = path.resolve("src", name, didFileName); 
-      if (!fs.existsSync(didFilePath)) {
-        throw new Error(`DID file not found: ${didFilePath}`);
+      if (category === "frontend") {
+        const frontendIdlFactoryPath = path.resolve(
+          "src",
+          "declarations",
+          name,
+          `${name}.did.js`
+        );
+        const wasmFilePath =
+          "/Users/chandankushwaha/dfx-node/assetstorage.wasm";
+
+        return {
+          name,
+          category,
+          wasmPath: wasmFilePath,
+          frontendIdlFactoryPath,
+        };
+      } else {
+        const didFileName = `${name}.did`;
+        const didFilePath = path.resolve("src", name, didFileName);
+
+        if (!fs.existsSync(didFilePath)) {
+          throw new Error(`DID file not found: ${didFilePath}`);
+        }
+
+        const newDidFilePath = path.resolve(
+          "target",
+          "wasm32-unknown-unknown",
+          "release",
+          didFileName
+        );
+
+        fs.copyFileSync(didFilePath, newDidFilePath);
+
+        const wasmFilePath = path.resolve(
+          "target",
+          "wasm32-unknown-unknown",
+          "release",
+          `${name}.wasm`
+        );
+        const outputWasmPath = path.resolve(
+          "target",
+          "wasm32-unknown-unknown",
+          "release",
+          "output.wasm"
+        );
+
+        if (!fs.existsSync(wasmFilePath)) {
+          throw new Error(`WASM file not found: ${wasmFilePath}`);
+        }
+
+        execSync(
+          `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`
+        );
+
+        if (!fs.existsSync(outputWasmPath)) {
+          throw new Error(`Output WASM file not created: ${outputWasmPath}`);
+        }
+
+        return { name, category, wasmPath: outputWasmPath };
       }
-
-      const newDidFilePath = path.resolve(
-        "target",
-        "wasm32-unknown-unknown",
-        "release",
-        didFileName
-      );
-
-      fs.copyFileSync(didFilePath, newDidFilePath);
-
-      const wasmFilePath = path.resolve(
-        "target",
-        "wasm32-unknown-unknown",
-        "release",
-        `${name}.wasm`
-      );
-      const outputWasmPath = path.resolve(
-        "target",
-        "wasm32-unknown-unknown",
-        "release",
-        "output.wasm"
-      );
-
-      if (!fs.existsSync(wasmFilePath)) {
-        throw new Error(`WASM file not found: ${wasmFilePath}`);
-      }
-
-      execSync(
-        `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`
-      );
-
-      if (!fs.existsSync(outputWasmPath)) {
-        throw new Error(`Output WASM file not created: ${outputWasmPath}`);
-      }
-
-      return { name, category, wasmPath: outputWasmPath };
     });
 
     return canisterDetails;
   } catch (error) {
-    console.error(`Error processing canisters: ${(error as Error).message}`);
+    console.error(error);
     process.exit(1);
   }
 };
 
-async function createAgent() {
+async function createAgent(): Promise<HttpAgent> {
   const identity = Ed25519KeyIdentity.generate();
   const host =
     process.env.DFX_NETWORK === "local"
@@ -96,38 +119,62 @@ async function createAgent() {
 
 export async function createAndInstallCanisters() {
   try {
-    const canisterDetails = getCanisterDetails();
+    const canisterDetails = await getCanisterDetails();
     const agent = await createAgent();
 
     for (const canister of canisterDetails) {
       const managementCanister = ICManagementCanister.create({ agent });
-      const newCanisterId = await managementCanister.provisionalCreateCanisterWithCycles({
-        amount: BigInt(1000000000000),
-      });
+      const newCanisterId =
+        await managementCanister.provisionalCreateCanisterWithCycles({
+          amount: BigInt(1000000000000),
+        });
 
-      console.log(`Created new canister: ${newCanisterId}`);
-      await install(managementCanister, newCanisterId, canister.wasmPath);
+      if (canister.category === "backend") {
+        console.log(`Created backend canister: ${newCanisterId}`);
+        await install(managementCanister, newCanisterId, canister.wasmPath);
+      } else if (canister.category === "frontend") {
+        console.log(`Created frontend canister: ${newCanisterId}`);
+        console.log("canister.wasmPath", canister.wasmPath);
+
+        await install(managementCanister, newCanisterId, canister.wasmPath);
+
+        execSync("npm run build");
+const frontendIdlFactoryPath = path.resolve(canister.frontendIdlFactoryPath);
+const idlFactory = require(frontendIdlFactoryPath).default;
+
+
+        console.log("idlFactory : ", idlFactory);
+        // const FrontendCanisterActor = Actor.createActor(idlFactory, {
+        //   agent,
+        //   canisterId: newCanisterId.toText(),
+        // });
+
+        // await uploadFrontEndAssets(FrontendCanisterActor, newCanisterId);
+      }
     }
   } catch (error) {
     console.error("Error creating and installing canisters:", error);
   }
 }
 
+
 async function install(
   managementCanister: ICManagementCanister,
   canisterId: Principal,
   wasmPath: string
-) {
+): Promise<void> {
   try {
     if (!fs.existsSync(wasmPath)) {
-      throw new Error(`WASM file does not exist at path: ${wasmPath}`);
+      throw new Error(`WASM file not found: ${wasmPath}`);
     }
 
-    const wasmBuffer = await readFile(wasmPath);
+    const wasmBuffer = await fs.promises.readFile(wasmPath);
     const wasmModule = new Uint8Array(wasmBuffer);
 
     const initArgs = {
-      owner: Principal.fromText("6ydm4-srext-xsaic-y3v2x-cticp-5n6pf-2meh7-j43r6-rghg7-pt5nd-bqe"),
+      owner: Principal.fromText(
+        "6ydm4-srext-xsaic-y3v2x-cticp-5n6pf-2meh7-j43r6-rghg7-pt5nd-bqe"
+      ),
       name: "assetstorage.wasm",
     };
 
@@ -152,4 +199,65 @@ async function install(
       error
     );
   }
+}
+
+async function uploadFrontEndAssets(
+  FrontendCanisterActor: any,
+  canisterId: Principal
+): Promise<void> {
+  try {
+    const distPath = "./dist";
+    const files = await getFiles(distPath);
+    console.log("Please wait, code is installing...");
+
+    for (const file of files) {
+      const filePath = path.join(distPath, file);
+      const fileContent = await fs.promises.readFile(filePath);
+      const fileKey = `${file.replace(/\\/g, "/")}`;
+
+      const args = {
+        key: fileKey,
+        content: new Uint8Array(fileContent),
+        content_type: getMimeType(file),
+        content_encoding: "identity",
+        sha256: [],
+        aliased: [],
+      };
+
+      await FrontendCanisterActor.store(args);
+    }
+
+    console.log(`CanisterId: ${canisterId}`);
+  } catch (error) {
+    console.error("Error uploading assets:", error);
+  }
+}
+
+async function getFiles(
+  dir: fs.PathLike,
+  fileList: string[] = [],
+  baseDir = dir
+): Promise<string[]> {
+  const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir.toString(), entry.name);
+    if (entry.isDirectory()) {
+      await getFiles(fullPath, fileList, baseDir);
+    } else {
+      const relativePath = path.relative(baseDir.toString(), fullPath);
+      fileList.push(relativePath);
+    }
+  }
+  return fileList;
+}
+
+function getMimeType(fileName: string): string {
+  if (fileName.endsWith(".html")) return "text/html";
+  if (fileName.endsWith(".css")) return "text/css";
+  if (fileName.endsWith(".js")) return "application/javascript";
+  if (fileName.endsWith(".svg")) return "image/svg+xml";
+  if (fileName.endsWith(".png")) return "image/png";
+  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg"))
+    return "image/jpeg";
+  return "application/octet-stream";
 }
