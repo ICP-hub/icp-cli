@@ -7,14 +7,14 @@ import dotenv from "dotenv";
 import { join } from "path";
 import { IDL } from "@dfinity/candid";
 import { Actor } from "@dfinity/agent";
-import { idlFactory as frontendIdlFactory } from "./npmpackage_frontend.did.js";
-import fs from 'fs/promises';
-import path from 'path';
+import { idlFactory as frontendIdlFactory } from "../../npmpackage_frontend.did.js/index.js";
+import fs from "fs/promises";
+import path from "path";
 
 dotenv.config();
 
 const FRONTEND_WASM_PATH = join(process.cwd(), "assetstorage.wasm");
-const host ="http://127.0.0.1:4943";
+const host = "http://127.0.0.1:4943";
 
 // async function createAgent() {
 //   const identity = Ed25519KeyIdentity.generate();
@@ -47,7 +47,7 @@ export async function createFrontendCanister() {
       agent,
       canisterId: newFrontendCanisterId.toText(),
     });
-    await uploadFrontEndAssets(FrontendCanisterActor,CanisterId);
+    await uploadFrontEndAssets(FrontendCanisterActor, CanisterId);
   } catch (error) {
     console.error("Error creating canister:", error);
   }
@@ -115,43 +115,45 @@ async function install(managementCanister, canisterId) {
       wasmModule,
       arg,
     });
-    } catch (error) {
+  } catch (error) {
     console.error("Error during code installation:", error?.message || error);
   }
 }
 
-async function uploadFrontEndAssets(FrontendCanisterActor,CanisterId) {
+async function uploadFrontEndAssets(FrontendCanisterActor, CanisterId) {
   try {
-    const distPath = './dist';
+    const distPath = "./dist";
     const files = await getFiles(distPath);
     console.log("please wait code is installing...");
 
     for (const file of files) {
       const filePath = path.join(distPath, file);
       const fileContent = await fs.readFile(filePath);
-      const fileKey = `/${file.replace(/\\/g, '/')}`;
+      const fileKey = `/${file.replace(/\\/g, "/")}`;
 
       const args = {
         key: fileKey,
         content: new Uint8Array(fileContent),
         content_type: getMimeType(file),
         content_encoding: "identity",
-        sha256: [], 
+        sha256: [],
         aliased: [],
       };
-    await FrontendCanisterActor.store(args);
+      await FrontendCanisterActor.store(args);
     }
 
-    const blueBold = "\x1b[1;34m"; 
-    const whiteBright = "\x1b[1;37m"; 
+    const blueBold = "\x1b[1;34m";
+    const whiteBright = "\x1b[1;37m";
     const reset = "\x1b[0m";
-    
-    console.log(`${whiteBright}Front-end-canister : ${blueBold}http://${CanisterId}.localhost:4943/${reset}`);
-    console.log(`${whiteBright}Front-end-canister : ${blueBold}${host}/?canisterId=${CanisterId}${reset}`);
-    
 
+    console.log(
+      `${whiteBright}Front-end-canister : ${blueBold}http://${CanisterId}.localhost:4943/${reset}`
+    );
+    console.log(
+      `${whiteBright}Front-end-canister : ${blueBold}${host}/?canisterId=${CanisterId}${reset}`
+    );
   } catch (error) {
-    console.error('Error uploading assets:', error);
+    console.error("Error uploading assets:", error);
   }
 }
 
@@ -170,15 +172,15 @@ async function getFiles(dir, fileList = [], baseDir = dir) {
 }
 
 function getMimeType(fileName) {
-  if (fileName.endsWith('.html')) return 'text/html';
-  if (fileName.endsWith('.css')) return 'text/css';
-  if (fileName.endsWith('.js')) return 'application/javascript';
-  if (fileName.endsWith('.svg')) return 'image/svg+xml';
-  if (fileName.endsWith('.png')) return 'image/png';
-  if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) return 'image/jpeg';
-  return 'application/octet-stream';
+  if (fileName.endsWith(".html")) return "text/html";
+  if (fileName.endsWith(".css")) return "text/css";
+  if (fileName.endsWith(".js")) return "application/javascript";
+  if (fileName.endsWith(".svg")) return "image/svg+xml";
+  if (fileName.endsWith(".png")) return "image/png";
+  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg"))
+    return "image/jpeg";
+  return "application/octet-stream";
 }
-
 
 export {
   createAgent,
@@ -188,5 +190,4 @@ export {
   install,
 };
 
-
-createFrontendCanister()
+createFrontendCanister();

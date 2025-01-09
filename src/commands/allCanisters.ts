@@ -12,12 +12,6 @@ import { tmpdir } from "os";
 import { promises as fsp } from "fs";
 import { createRequire } from "module";
 import getActor from "./getActor.js";
-// @ts-ignore
-// import { idlFactory as frontendIdlFactory } from "./npmpackage_frontend.did.js";
-
-// import { idlFactory } from "./fe_frontend.did.js";
-// import {idlFactory as frontendIdlFactory} from "./fe_frontend.did.d"
-// import { idlFactory as frontendIdlFactory } from "./fe_frontend.did.js";
 
 
 dotenv.config();
@@ -49,8 +43,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           name,
           `${name}.did.js`
         );
-        const wasmFilePath =
-          "/Users/pratap/code/kai/dfx-node/src/commands/assetstorage.wasm";
+        const wasmFilePath = "/Users/chandankushwaha/dfx-node/assetstorage.wasm";
 
         return {
           name,
@@ -142,30 +135,15 @@ export async function createAndInstallCanisters() {
         await install(managementCanister, newCanisterId, canister.wasmPath);
       } else if (canister.category === "frontend") {
         console.log(`Created frontend canister: ${newCanisterId}`);
-        console.log("canister.wasmPath", canister.wasmPath);
 
         await install(managementCanister, newCanisterId, canister.wasmPath);
 
-                execSync("npm run build");
-        // const frontendIdlFactoryPath = path.resolve(canister.frontendIdlFactoryPath);
-        // console.log("fidl: ", frontendIdlFactoryPath);
-        // @ts-ignore
-        // const idlFactory = require(idlFactory).default;
+        execSync("npm run build");
 
-
-        // console.log("idlFactory : ", idlFactory);
-
-        // @ts-ignore
         const feActor = getActor(agent, newCanisterId.toText());
-        console.log("acttt", feActor);
-        // const FrontendCanisterActor = Actor.createActor(frontendIdlFactory, {
-        //   agent,
-        //   canisterId: newCanisterId.toText(),
-        // });
+       
 
-        // console.log("idl factory is: ", FrontendCanisterActor);
-
-        await uploadFrontEndAssets(feActor, newCanisterId);
+        await uploadFrontEndAssets(feActor, newCanisterId, canister.name);
       }
     }
   } catch (error) {
@@ -199,13 +177,13 @@ async function install(
       name: IDL.Text,
     });
 
-    const arg = IDL.encode([candidType], [initArgs]);
+    const arg : any = IDL.encode([candidType], [initArgs]);
 
     await managementCanister.installCode({
       mode: InstallMode.Install,
       canisterId,
       wasmModule,
-      arg: new Uint8Array(arg),
+      arg: arg,
     });
 
     console.log(`Code installed successfully for canister: ${canisterId}`);
@@ -219,37 +197,33 @@ async function install(
 
 async function uploadFrontEndAssets(
   FrontendCanisterActor: any,
-  canisterId: Principal
+  canisterId: Principal,
+  canisterName: any
 ): Promise<void> {
   try {
-    // const pattt = path.resolve("src");
-    // console.log("sfsd; ", pattt);
-    const distPath = "/Users/pratap/code/kai/fe/src/fe_frontend/dist";
-
+    const distPath = path.join(process.cwd(), "src", canisterName, "dist");
     const files = await getFiles(distPath);
-    console.log("files ", files);
-    console.log("Please wait, code is installing...");
 
     for (const file of files) {
       const filePath = path.join(distPath, file);
       const fileContent = await fs.promises.readFile(filePath);
-      const fileKey = `${file.replace(/\\/g, "/")}`;
+      const fileKey = `/${file.replace(/\\/g, "/")}`;
 
       const args = {
         key: fileKey,
         content: new Uint8Array(fileContent),
         content_type: getMimeType(file),
         content_encoding: "identity",
-        sha256: [],
+        sha256 : [],
         aliased: [],
       };
 
       await FrontendCanisterActor.store(args);
     }
 
-    console.log(`CanisterId: ${canisterId}`);
+    console.log(`Frontend assets uploaded to canister: ${canisterId}`);
   } catch (error) {
-    console.error("Error uploading assets:", error);
+    console.error("Error uploading frontend assets:", error);
   }
 }
 
@@ -277,8 +251,7 @@ function getMimeType(fileName: string): string {
   if (fileName.endsWith(".js")) return "application/javascript";
   if (fileName.endsWith(".svg")) return "image/svg+xml";
   if (fileName.endsWith(".png")) return "image/png";
-  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg"))
-    return "image/jpeg";
+  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
   return "application/octet-stream";
 }
 

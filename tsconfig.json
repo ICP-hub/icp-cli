@@ -9,6 +9,6 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src/**/*", "bin/**/*", "tests/**/*", "bin"],
+  "include": ["src/**/*", "bin/**/*", "tests/**/*", "bin", "npmpackage_frontend.did.js"],
   "exclude": ["node_modules"]
 }
