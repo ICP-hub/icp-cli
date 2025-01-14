@@ -7,10 +7,6 @@ import { Ed25519KeyIdentity } from "@dfinity/identity";
 import { ICManagementCanister, InstallMode } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import { IDL } from "@dfinity/candid";
-import { Actor } from "@dfinity/agent";
-import { tmpdir } from "os";
-import { promises as fsp } from "fs";
-import { createRequire } from "module";
 import getActor from "./getActor.js";
 
 
@@ -23,18 +19,54 @@ interface CanisterDetail {
   frontendIdlFactoryPath?: any;
 }
 
+
 export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
   const dfxFilePath = path.resolve("dfx.json");
+
   try {
+    if (!fs.existsSync(dfxFilePath)) {
+      throw new Error(`dfx.json file not found at ${dfxFilePath}`);
+    }
+
     const data = await fs.promises.readFile(dfxFilePath, "utf-8");
     const dfxConfig = JSON.parse(data);
     const canisters = dfxConfig.canisters || {};
 
-    execSync("cargo build --release --target wasm32-unknown-unknown");
+    const assetstorageDid = path.resolve(
+      "/home/anish/QuadBProjects/dfx-node/src/commands/assetstorage.did"
+    );
 
-    const canisterDetails = Object.keys(canisters).map((name) => {
+    if (!fs.existsSync(assetstorageDid)) {
+      throw new Error(`assetstorage.did file not found: ${assetstorageDid}`);
+    }
+
+    console.log("Building Rust project...");
+    execSync("cargo build --release --target wasm32-unknown-unknown", { stdio: "inherit" });
+
+    const copyAssetStorageDid = async (name: string) => {
+      const targetPaths = [
+        path.resolve(".dfx", "local", "canisters", name, "assetstorage.did"),
+        path.resolve("src", "declarations", name, "assetstorage.did"),
+      ];
+
+      targetPaths.forEach((targetPath) => {
+        if (!fs.existsSync(targetPath)) {
+          console.log(`Copying assetstorage.did to ${targetPath}`);
+          try {
+            fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+            fs.copyFileSync(assetstorageDid, targetPath);
+          } catch (err) {
+            console.error(`Failed to copy assetstorage.did to ${targetPath}: ${err}`);
+          }
+        }
+      });
+    };
+
+    const canisterDetails =  await Promise.all( Object.keys(canisters).map(async (name) => {
       const type = canisters[name]?.type || "unknown";
       const category = type === "rust" ? "backend" : "frontend";
+
+      await copyAssetStorageDid(name);
 
       if (category === "frontend") {
         const frontendIdlFactoryPath = path.resolve(
@@ -43,7 +75,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           name,
           `${name}.did.js`
         );
-        const wasmFilePath = "/Users/chandankushwaha/dfx-node/assetstorage.wasm";
+        const wasmFilePath = "/home/anish/QuadBProjects/dfx-node/assetstorage.wasm";
 
         return {
           name,
@@ -86,7 +118,8 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
         }
 
         execSync(
-          `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`
+          `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`,
+          { stdio: "inherit" }
         );
 
         if (!fs.existsSync(outputWasmPath)) {
@@ -95,25 +128,27 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
         return { name, category, wasmPath: outputWasmPath };
       }
-    });
+    }));
 
     return canisterDetails;
+
   } catch (error) {
-    console.error(error);
+    console.error(`Error occurred: ${error}`);
     process.exit(1);
   }
 };
 
+
 async function createAgent(): Promise<HttpAgent> {
   const identity = Ed25519KeyIdentity.generate();
   const host = "http://127.0.0.1:4943";
-    // process.env.DFX_NETWORK === "local"
-      // ? "http://127.0.0.1:4943"
-      // : "https://ic0.app";
+  // process.env.DFX_NETWORK === "local"
+  // ? "http://127.0.0.1:4943"
+  // : "https://ic0.app";
 
   const agent = new HttpAgent({ identity, host });
   // if (process.env.DFX_NETWORK === "local") {
-    await agent.fetchRootKey();
+  await agent.fetchRootKey();
   // }
   return agent;
 }
@@ -137,11 +172,9 @@ export async function createAndInstallCanisters() {
         console.log(`Created frontend canister: ${newCanisterId}`);
 
         await install(managementCanister, newCanisterId, canister.wasmPath);
+        await execSync("npm run build"); 
 
-        execSync("npm run build");
-
-        const feActor = getActor(agent, newCanisterId.toText());
-       
+        const feActor = await getActor(agent, newCanisterId.toText());
 
         await uploadFrontEndAssets(feActor, newCanisterId, canister.name);
       }
@@ -177,7 +210,7 @@ async function install(
       name: IDL.Text,
     });
 
-    const arg : any = IDL.encode([candidType], [initArgs]);
+    const arg: any = IDL.encode([candidType], [initArgs]);
 
     await managementCanister.installCode({
       mode: InstallMode.Install,
@@ -214,7 +247,7 @@ async function uploadFrontEndAssets(
         content: new Uint8Array(fileContent),
         content_type: getMimeType(file),
         content_encoding: "identity",
-        sha256 : [],
+        sha256: [],
         aliased: [],
       };
 
