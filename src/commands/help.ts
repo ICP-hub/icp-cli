@@ -9,7 +9,7 @@ Commands:
   build     Build the project
   help      Show help information
   cwd       to show the path of current location
-  canisters to check canisters exist or not
+  deploy to check canisters exist or not
 
 For more information, use '${appName} <command> --help'.
   `);

@@ -8,6 +8,7 @@ import build from "../commands/build";
 import help from "../commands/help";
 import { appDescription, appName, appVersion } from "../config";
 import { createAndInstallCanisters, getCanisterDetails } from "../commands/allCanisters";
+import { createIcpProject } from "../commands/installProject";
 
 
 program
@@ -30,15 +31,20 @@ program
   .description('Show help information')
   .action(help);
 
-  program
-  .command("cwd")
-  .description("Display the current working directory")
-  .action(() => {
-    console.log(`Current working directory: ${process.cwd()}`);
-  });
+program
+  .command('new')
+  .description('create new icp project')
+  .action(createIcpProject);
 
-  program
-  .command("canisters")
+ program
+ .command("cwd")
+ .description("Display the current working directory")
+ .action(() => {
+ console.log(`Current working directory: ${process.cwd()}`);
+ });
+
+program
+  .command("deploy")
   .description("List canisters and their categories (backend/frontend)")
   .action(createAndInstallCanisters);
 

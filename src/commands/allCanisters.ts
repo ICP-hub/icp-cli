@@ -33,7 +33,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
     const canisters = dfxConfig.canisters || {};
 
     const assetstorageDid = path.resolve(
-      "/home/anish/QuadBProjects/dfx-node/src/commands/assetstorage.did"
+      "/home/anish/Icp-hub/dfx-node/src/commands/assetstorage.did"
     );
 
     if (!fs.existsSync(assetstorageDid)) {
@@ -51,7 +51,6 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
       targetPaths.forEach((targetPath) => {
         if (!fs.existsSync(targetPath)) {
-          console.log(`Copying assetstorage.did to ${targetPath}`);
           try {
             fs.mkdirSync(path.dirname(targetPath), { recursive: true });
             fs.copyFileSync(assetstorageDid, targetPath);
@@ -75,7 +74,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           name,
           `${name}.did.js`
         );
-        const wasmFilePath = "/home/anish/QuadBProjects/dfx-node/assetstorage.wasm";
+        const wasmFilePath = "/home/anish/Icp-hub/dfx-node/assetstorage.wasm";
 
         return {
           name,
@@ -98,7 +97,16 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           didFileName
         );
 
+        const newDidFilePath2 = path.resolve(
+          ".dfx",
+          "local",
+          "canisters",
+          name,
+          "service.did"
+        );
+
         fs.copyFileSync(didFilePath, newDidFilePath);
+        fs.copyFileSync(didFilePath, newDidFilePath2);
 
         const wasmFilePath = path.resolve(
           "target",
@@ -106,6 +114,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           "release",
           `${name}.wasm`
         );
+        
         const outputWasmPath = path.resolve(
           "target",
           "wasm32-unknown-unknown",
@@ -113,14 +122,23 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           "output.wasm"
         );
 
+        const newWasmPath = path.resolve(
+          ".dfx",
+          "local",
+          "canisters",
+          name,
+         `${name}.wasm`
+        );
+        
         if (!fs.existsSync(wasmFilePath)) {
           throw new Error(`WASM file not found: ${wasmFilePath}`);
         }
 
         execSync(
-          `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`,
-          { stdio: "inherit" }
-        );
+          `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`, { stdio: "inherit" });
+
+          execSync(
+            `ic-wasm "${wasmFilePath}" -o "${newWasmPath}" metadata candid:service -f "${newDidFilePath2}" -v public`, { stdio: "inherit" });
 
         if (!fs.existsSync(outputWasmPath)) {
           throw new Error(`Output WASM file not created: ${outputWasmPath}`);
@@ -138,10 +156,10 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
   }
 };
 
-
 async function createAgent(): Promise<HttpAgent> {
   const identity = Ed25519KeyIdentity.generate();
   const host = "http://127.0.0.1:4943";
+  // const host = "https://ic0.app";
   // process.env.DFX_NETWORK === "local"
   // ? "http://127.0.0.1:4943"
   // : "https://ic0.app";
@@ -161,19 +179,21 @@ export async function createAndInstallCanisters() {
     for (const canister of canisterDetails) {
       const managementCanister = ICManagementCanister.create({ agent });
       const newCanisterId =
-        await managementCanister.provisionalCreateCanisterWithCycles({
-          amount: BigInt(1000000000000),
-        });
-
+      await managementCanister.provisionalCreateCanisterWithCycles({
+        amount: BigInt(1000000000000),
+      });
+      
+      console.log("phase 1");
+        
       if (canister.category === "backend") {
         console.log(`Created backend canister: ${newCanisterId}`);
         await install(managementCanister, newCanisterId, canister.wasmPath);
       } else if (canister.category === "frontend") {
         console.log(`Created frontend canister: ${newCanisterId}`);
-
         await install(managementCanister, newCanisterId, canister.wasmPath);
+        console.log("phase 2");
         await execSync("npm run build"); 
-
+        console.log("phase 3");
         const feActor = await getActor(agent, newCanisterId.toText());
 
         await uploadFrontEndAssets(feActor, newCanisterId, canister.name);
@@ -183,7 +203,6 @@ export async function createAndInstallCanisters() {
     console.error("Error creating and installing canisters:", error);
   }
 }
-
 
 async function install(
   managementCanister: ICManagementCanister,
