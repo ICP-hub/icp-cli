@@ -10,7 +10,6 @@ import { appDescription, appName, appVersion } from "../config";
 import { createAndInstallCanisters, getCanisterDetails } from "../commands/allCanisters";
 import { createIcpProject } from "../commands/installProject";
 
-
 program
   .name(appName)
   .description(appDescription)
@@ -32,9 +31,11 @@ program
   .action(help);
 
 program
-  .command('new')
+  .command('new <projectName>')
   .description('create new icp project')
-  .action(createIcpProject);
+  .action((projectName) => {
+    createIcpProject(projectName); 
+  });
 
  program
  .command("cwd")
