@@ -8,6 +8,7 @@ import { ICManagementCanister, InstallMode } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import { IDL } from "@dfinity/candid";
 import getActor from "./getActor.js";
+import { Secp256k1KeyIdentity } from "@dfinity/identity-secp256k1";
 
 
 dotenv.config();
@@ -157,14 +158,19 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 };
 
 async function createAgent(): Promise<HttpAgent> {
-  const identity = Ed25519KeyIdentity.generate();
+  const Pharsekey = Secp256k1KeyIdentity.fromSeedPhrase("earth input twelve fog improve voyage life ill atom turkey inside one loop digital valley miracle torch hedgehog oak time glove liberty fabric orange");
+
+  // const principal : any = Pharsekey?.getPrincipal();
+  // console.log("principal",principal.toText());
+
   const host = "http://127.0.0.1:4943";
+  
   // const host = "https://ic0.app";
   // process.env.DFX_NETWORK === "local"
   // ? "http://127.0.0.1:4943"
   // : "https://ic0.app";
 
-  const agent = new HttpAgent({ identity, host });
+  const agent = new HttpAgent({ identity : Pharsekey, host });
   // if (process.env.DFX_NETWORK === "local") {
   await agent.fetchRootKey();
   // }
