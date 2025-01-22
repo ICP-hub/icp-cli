@@ -9,6 +9,7 @@ import help from "../commands/help";
 import { appDescription, appName, appVersion } from "../config";
 import { createAndInstallCanisters, getCanisterDetails } from "../commands/allCanisters";
 import { createIcpProject } from "../commands/installProject";
+import inquirer from 'inquirer';
 
 program
   .name(appName)
@@ -30,12 +31,42 @@ program
   .description('Show help information')
   .action(help);
 
+// program
+//   .command('new <projectName>')
+//   .description('create new icp project')
+//   .action((projectName) => {
+//     createIcpProject(projectName); 
+//   });
+
 program
-  .command('new <projectName>')
-  .description('create new icp project')
-  .action((projectName) => {
-    createIcpProject(projectName); 
-  });
+.command('new <projectName>')
+.description('create new ICP project')
+.action(async (projectName) => {
+  const { backendLanguage } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'backendLanguage',
+      message: 'Select a backend language:',
+      choices: ['Motoko', 'Rust',],
+      default: 'Motoko',
+    },
+  ]);
+
+  const {frontendLanguage}  = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'frontendLanguage',
+      message: 'Select a Frontend language:',
+      choices: ['React', 'Vue', 'None'],
+      default: 'React',
+    },
+  ]);
+  
+  await createIcpProject(projectName, backendLanguage, frontendLanguage);
+  console.log(`cd ${projectName}/`);
+  console.log("icp deploy");
+  console.log("ICP project created successfully");
+});
 
  program
  .command("cwd")
