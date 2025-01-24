@@ -10,6 +10,7 @@ import { appDescription, appName, appVersion } from "../config";
 import { createAndInstallCanisters, getCanisterDetails } from "../commands/allCanisters";
 import { createIcpProject } from "../commands/installProject";
 import inquirer from 'inquirer';
+import { faucerCoupon } from "../redeem-coupon/faucetCycles";
 
 program
   .name(appName)
@@ -31,12 +32,10 @@ program
   .description('Show help information')
   .action(help);
 
-// program
-//   .command('new <projectName>')
-//   .description('create new icp project')
-//   .action((projectName) => {
-//     createIcpProject(projectName); 
-//   });
+program
+  .command('redeem')
+  .description('create new icp project')
+  .action(faucerCoupon);
 
 program
 .command('new <projectName>')
