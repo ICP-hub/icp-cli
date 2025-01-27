@@ -76,7 +76,10 @@ program
 
 program
   .command("deploy")
+  .option("--ic", "--ic is to deploy project on-mainnet")
   .description("List canisters and their categories (backend/frontend)")
-  .action(createAndInstallCanisters);
+  .action((options) => {
+    createAndInstallCanisters(options);
+  });
 
 program.parse(process.argv);

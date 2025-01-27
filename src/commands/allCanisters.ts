@@ -210,7 +210,6 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
     }));
 
     return canisterDetails;
-
   } catch (error) {
     console.error(`Error occurred: ${error}`);
     process.exit(1);
@@ -225,7 +224,6 @@ async function createAgent(): Promise<HttpAgent> {
 
   const host = "http://127.0.0.1:4943";
   // const host = "https://ic0.app";
-  // const host = "https://ic0.app";
   // process.env.DFX_NETWORK === "local"
   // ? "http://127.0.0.1:4943"
   // : "https://ic0.app";
@@ -237,48 +235,83 @@ async function createAgent(): Promise<HttpAgent> {
   return agent;
 }
 
-export async function createAndInstallCanisters() {
+async function updateCanisterDataFile(canisterName: string, canisterId: Principal) {
+  const filePath = path.resolve(process.cwd(), 'localcanister.json');
+  try {
+    let data: Record<string, string> = {};
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, JSON.stringify({}, null, 2), { encoding: 'utf8' });
+    }
+    const fileContent = fs.readFileSync(filePath, { encoding: 'utf-8' });
+    data = JSON.parse(fileContent);
+    data[canisterName] = canisterId?.toString();
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), { encoding: 'utf8' });
+  } catch (error) {
+    console.error('Error updating canister data file:', error);
+  }
+}
+
+
+export async function createAndInstallCanisters(options: any) {
   try {
     const canisterDetails = await getCanisterDetails();
     const agent = await createAgent();
 
     for (const canister of canisterDetails) {
       const managementCanister = ICManagementCanister.create({ agent });
+      let newCanisterId: any;
 
-      const newCanisterId =
-        await managementCanister.provisionalCreateCanisterWithCycles({
-          amount: BigInt(1000000000000),
-        });
-
-      // const actor = await createCanisterActor();
-      // console.log("actor : ",actor);
-      // const newCanisterId : any = await actor?.get_canister_id();
-
-      console.log("phase 1");
-      console.log("New Canister ID:", newCanisterId);
+      if (!options?.ic) {
+        newCanisterId =
+          await managementCanister.provisionalCreateCanisterWithCycles({
+            amount: BigInt(1000000000000),
+          });
+      } else {
+        try {
+          const actor = await createCanisterActor();
+          newCanisterId = await actor?.get_canister_id();
+          console.log("newCanisterId : ",newCanisterId?.toString());
+        } catch (error) {
+          console.log("error detucted : ",error);
+        }
+      }
+      if (newCanisterId && canister.name) {
+        await updateCanisterDataFile(
+          canister.name,
+          newCanisterId);
+      }
 
       if (canister.category === "backend") {
         console.log(`Created backend canister: ${newCanisterId}`);
-        if (canister.type == "rust") {
-          await install(managementCanister, newCanisterId, canister.wasmPath);
-        } else if (canister.type == "motoko") {
-          await install(managementCanister, newCanisterId, canister.wasmPath);
-        }
+        await install(managementCanister, newCanisterId, canister.wasmPath);
       } else {
         console.log(`Created frontend canister: ${newCanisterId}`);
         await install(managementCanister, newCanisterId, canister.wasmPath);
-        const rootPath = path.join(process.cwd());
-        const buildCommand = "npm run build"
-        
-        await execSync(buildCommand, {
-          cwd: `${rootPath}`,
-          stdio: "inherit",
-          shell: true,
-        });
-        
-        console.log("phase 2");
+        const filePath: any = path.resolve(process.cwd(), ".dfx", "local", "canisters", canister.name, "assetstorage.did")
+        try {
+          if (!fs.existsSync(filePath)) {
+            throw new Error(`filePath does not exist at: ${filePath}`);
+          }
+          const rootPath = path.join(process.cwd());
+          const buildCommand = "npm run build"
+          await execSync(buildCommand, {
+            cwd: `${rootPath}`,
+            shell: true,
+            stdio: "ignore",
+          });
+        } catch (error) {
+          await getCanisterDetails();
+          const rootPath = path.join(process.cwd());
+          const buildCommand = "npm run build"
+          await execSync(buildCommand, {
+            cwd: `${rootPath}`,
+            shell: true,
+            stdio: "ignore",
+          });
+        }
         const feActor = await getActor(agent, newCanisterId);
         await uploadFrontEndAssets(feActor, newCanisterId, canister.name);
+        console.log(`Code installed successfully for canister: ${newCanisterId}`);
       }
     }
   } catch (error) {
@@ -319,11 +352,9 @@ async function install(
       wasmModule,
       arg: arg,
     });
-
-    console.log(`Code installed successfully for canister: ${canisterId}`);
   } catch (error) {
     console.error(
-      `Error during code installation for canister ${canisterId?.toText()}:`,
+      `Error during code installation for canister ${canisterId}:`,
       error
     );
   }
@@ -354,8 +385,6 @@ async function uploadFrontEndAssets(
 
       await FrontendCanisterActor.store(args);
     }
-
-    console.log(`Frontend assets uploaded to canister: ${canisterId}`);
   } catch (error) {
     console.error("Error uploading frontend assets:", error);
   }
