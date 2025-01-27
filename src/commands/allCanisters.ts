@@ -260,21 +260,13 @@ export async function createAndInstallCanisters(options: any) {
     for (const canister of canisterDetails) {
       const managementCanister = ICManagementCanister.create({ agent });
       let newCanisterId: any;
-
-      if (!options?.ic) {
-        newCanisterId =
-          await managementCanister.provisionalCreateCanisterWithCycles({
-            amount: BigInt(1000000000000),
-          });
-      } else {
         try {
           const actor = await createCanisterActor();
-          newCanisterId = await actor?.get_canister_id();
-          console.log("newCanisterId : ",newCanisterId?.toString());
+          let data : any= await actor?.get_canister_id();
+          newCanisterId = data.Ok;
         } catch (error) {
           console.log("error detucted : ",error);
         }
-      }
       if (newCanisterId && canister.name) {
         await updateCanisterDataFile(
           canister.name,
