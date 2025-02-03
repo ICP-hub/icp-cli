@@ -7,7 +7,7 @@ import init from "../commands/init";
 import build from "../commands/build";
 import help from "../commands/help";
 import { appDescription, appName, appVersion } from "../config";
-import { createAndInstallCanisters, getCanisterDetails } from "../commands/allCanisters";
+import { createAndInstallCanisters } from "../commands/allCanisters";
 import { createIcpProject } from "../commands/installProject";
 import inquirer from 'inquirer';
 import { faucerCoupon } from "../redeem-coupon/faucetCycles";
@@ -46,8 +46,8 @@ program
       type: 'list',
       name: 'backendLanguage',
       message: 'Select a backend language:',
-      choices: ['Motoko', 'Rust',],
-      default: 'Motoko',
+      choices: ['Rust',],
+      default: 'Rust',
     },
   ]);
 

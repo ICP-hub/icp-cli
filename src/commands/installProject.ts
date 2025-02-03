@@ -1,4 +1,3 @@
-import { installMotokoBakend } from "../Projects/Backend/installMotoko";
 import { installRustBakend } from "../Projects/Backend/installRust";
 import { installReactFrontend } from "../Projects/Frontend/installReactJS";
 import { installVueFrontend } from "../Projects/Frontend/installVueJS";
@@ -58,15 +57,5 @@ export async function createIcpProject(projectName: String, backendLanguage: Str
       return;
     }
     return;
-  } else if (backendLanguage == "Motoko") {
-    await installMotokoBakend(projectName, projectPath, dfxJson);
-    if (frontendLanguage == "React") {
-      await installReactFrontend(projectName, projectPath);
-      return;
-    } else if (frontendLanguage == "Vue") {
-      await installVueFrontend(projectName, projectPath);
-      return;
-    }
-    return;
-  }
+  } 
 }
