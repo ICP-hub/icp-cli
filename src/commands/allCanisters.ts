@@ -43,7 +43,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
       throw new Error(`assetstorage.did file not found: ${assetstorageDid}`);
     }
 
-    const copyAssetStorageDid = async (name: string) => {
+    const copyAssetStorageDid = (name: string) => {
       const targetPaths = [
         path.resolve(".dfx", "local", "canisters", name, "assetstorage.did"),
         path.resolve("src", "declarations", name, "assetstorage.did"),
@@ -61,153 +61,104 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
       });
     };
 
-    const copyMotokoWasmFile = async (name: string) => {
-      try {
-        const targetDir = path.resolve(".dfx", "local", "canisters", name);
-        const wasmPath = path.resolve("src", name, `${name}.wasm`);
-        const targetPath = path.join(targetDir, `${name}.wasm`);
+    const canisterDetails = await Promise.all(
+      Object.keys(canisters).map(async (name) => {
+        const type = canisters[name]?.type || "unknown";
+        const category = type === "rust" ? "backend" : "frontend";
+        let wasmPath = "";
+        let frontendIdlFactoryPath: string | undefined;
 
-        if (!fs.existsSync(targetDir)) {
-          fs.mkdirSync(targetDir, { recursive: true });
-        }
-        if (fs.existsSync(wasmPath)) {
-          fs.renameSync(wasmPath, targetPath);
+        if (type === "rust") {
+          console.log("Building Rust project...");
+          execSync("cargo build --release --target wasm32-unknown-unknown", { stdio: "inherit" });
+          copyAssetStorageDid(name);
+
+          const didFileName = `${name}.did`;
+          const didFilePath = path.resolve("src", name, didFileName);
+
+          if (!fs.existsSync(didFilePath)) {
+            throw new Error(`DID file not found: ${didFilePath}`);
+          }
+
+          const newDidFilePath = path.resolve(
+            "target",
+            "wasm32-unknown-unknown",
+            "release",
+            didFileName
+          );
+
+          const newDidFilePath2 = path.resolve(
+            ".dfx",
+            "local",
+            "canisters",
+            name,
+            "service.did"
+          );
+
+          fs.copyFileSync(didFilePath, newDidFilePath);
+          fs.copyFileSync(didFilePath, newDidFilePath2);
+
+          const wasmFilePath = path.resolve(
+            "target",
+            "wasm32-unknown-unknown",
+            "release",
+            `${name}.wasm`
+          );
+
+          const outputWasmPath = path.resolve(
+            "target",
+            "wasm32-unknown-unknown",
+            "release",
+            "output.wasm"
+          );
+
+          const newWasmPath = path.resolve(
+            ".dfx",
+            "local",
+            "canisters",
+            name,
+            `${name}.wasm`
+          );
+
+          if (!fs.existsSync(wasmFilePath)) {
+            throw new Error(`WASM file not found: ${wasmFilePath}`);
+          }
+
+          execSync(
+            `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`,
+            { stdio: "inherit" }
+          );
+
+          execSync(
+            `ic-wasm "${wasmFilePath}" -o "${newWasmPath}" metadata candid:service -f "${newDidFilePath2}" -v public`,
+            { stdio: "inherit" }
+          );
+
+          if (!fs.existsSync(outputWasmPath)) {
+            throw new Error(`Output WASM file not created: ${outputWasmPath}`);
+          }
+
+          wasmPath = outputWasmPath;
         } else {
-          console.error(`WASM file does not exist at ${wasmPath}`);
+          frontendIdlFactoryPath = path.resolve(
+            "src",
+            "declarations",
+            name,
+            `${name}.did.js`
+          );
+          copyAssetStorageDid(name);
+          wasmPath = "/home/anish/Icp-hub/dfx-node/assetstorage.wasm";
         }
-      } catch (error) {
-        console.log(error);
-      }
-    }
 
-    const canisterDetails = await Promise.all(Object.keys(canisters).map(async (name) => {
-      const type = canisters[name]?.type || "unknown";
-      const category = (type === "rust" || type === "motoko") ? "backend" : "frontend";
-      if (type == "rust") {
-        console.log("Building Rust project...");
-        execSync("cargo build --release --target wasm32-unknown-unknown", { stdio: "inherit" });
-        await copyAssetStorageDid(name);
-      } else if (type == "motoko") {
-        let command = `$(dfx cache show)/moc --package base "$(dfx cache show)/base" -o ${name}.wasm main.mo`;
-
-        const projectPath = `${process.cwd()}/src/${name}`;
-        await execSync(command, {
-          cwd: projectPath,
-          stdio: "inherit",
-          shell: true,
-        });
-        await copyMotokoWasmFile(name);
-      }
-      if (category === "frontend") {
-        const frontendIdlFactoryPath = path.resolve(
-          "src",
-          "declarations",
-          name,
-          `${name}.did.js`
-        );
-        await copyAssetStorageDid(name);
-        const wasmFilePath = "/home/anish/Icp-hub/dfx-node/assetstorage.wasm";
         return {
           name,
           type,
           category,
-          wasmPath: wasmFilePath,
-          frontendIdlFactoryPath,
+          wasmPath,
+          ...(frontendIdlFactoryPath && { frontendIdlFactoryPath }),
         };
-      } else if (type == "motoko") {
-        const didFileName = `${name}.did`;
-        const didFilePath = path.resolve("src", "declarations", didFileName);
-
-        if (!fs.existsSync(didFilePath)) {
-          throw new Error(`DID file not found: ${didFilePath}`);
-        }
-
-        const newDidFilePath2 = path.resolve(
-          ".dfx",
-          "local",
-          "canisters",
-          name,
-          didFileName
-        );
-
-        const destinationDir = path.dirname(newDidFilePath2);
-        if (!fs.existsSync(destinationDir)) {
-          fs.mkdirSync(destinationDir, { recursive: true });
-        }
-
-        fs.copyFileSync(didFilePath, newDidFilePath2);
-        const wasmPath = path.resolve(".dfx", "local", "canisters", name, `${name}.wasm`);
-        const newasmPaths = path.resolve(".dfx", "local", "canisters", name, `output.wasm`);
-
-        execSync(
-          `ic-wasm "${wasmPath}" -o "${newasmPaths}" metadata candid:service -f "${newDidFilePath2}" -v public`, { stdio: "inherit" });
-
-        return { name, type, category, wasmPath: newasmPaths };
-      } else {
-        const didFileName = `${name}.did`;
-        const didFilePath = path.resolve("src", name, didFileName);
-
-        if (!fs.existsSync(didFilePath)) {
-          throw new Error(`DIDd file not found: ${didFilePath}`);
-        }
-
-        const newDidFilePath = path.resolve(
-          "target",
-          "wasm32-unknown-unknown",
-          "release",
-          didFileName
-        );
-
-        const newDidFilePath2 = path.resolve(
-          ".dfx",
-          "local",
-          "canisters",
-          name,
-          "service.did"
-        );
-
-        fs.copyFileSync(didFilePath, newDidFilePath);
-        fs.copyFileSync(didFilePath, newDidFilePath2);
-
-        const wasmFilePath = path.resolve(
-          "target",
-          "wasm32-unknown-unknown",
-          "release",
-          `${name}.wasm`
-        );
-
-        const outputWasmPath = path.resolve(
-          "target",
-          "wasm32-unknown-unknown",
-          "release",
-          "output.wasm"
-        );
-
-        const newWasmPath = path.resolve(
-          ".dfx",
-          "local",
-          "canisters",
-          name,
-          `${name}.wasm`
-        );
-
-        if (!fs.existsSync(wasmFilePath)) {
-          throw new Error(`WASM file not found: ${wasmFilePath}`);
-        }
-
-        execSync(
-          `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`, { stdio: "inherit" });
-
-        execSync(
-          `ic-wasm "${wasmFilePath}" -o "${newWasmPath}" metadata candid:service -f "${newDidFilePath2}" -v public`, { stdio: "inherit" });
-
-        if (!fs.existsSync(outputWasmPath)) {
-          throw new Error(`Output WASM file not created: ${outputWasmPath}`);
-        }
-
-        return { name, type, category, wasmPath: outputWasmPath };
-      }
-    }));
+      })
+    );
 
     return canisterDetails;
   } catch (error) {
@@ -236,7 +187,7 @@ async function createAgent(): Promise<HttpAgent> {
 }
 
 async function updateCanisterDataFile(canisterName: string, canisterId: Principal) {
-  const filePath = path.resolve(process.cwd(), 'localcanister.json');
+  const filePath = path.resolve(process.cwd(), 'canisterid.json');
   try {
     let data: Record<string, string> = {};
     if (!fs.existsSync(filePath)) {
@@ -252,7 +203,7 @@ async function updateCanisterDataFile(canisterName: string, canisterId: Principa
 }
 
 
-export async function createAndInstallCanisters(options: any) {
+export async function createAndInstallCanisters() {
   try {
     const canisterDetails = await getCanisterDetails();
     const agent = await createAgent();

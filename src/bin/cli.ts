@@ -11,6 +11,17 @@ import { createAndInstallCanisters } from "../commands/allCanisters";
 import { createIcpProject } from "../commands/installProject";
 import inquirer from 'inquirer';
 import { faucerCoupon } from "../redeem-coupon/faucetCycles";
+const { execSync } = require("child_process");
+
+function checkIcWasm() {
+  try {
+    execSync("ic-wasm --version", { stdio: "ignore" });
+    return true;
+  } catch (error) {
+    console.log("not install bro", error);
+    return false;
+  }
+}
 
 program
   .name(appName)
@@ -38,48 +49,55 @@ program
   .action(faucerCoupon);
 
 program
-.command('new <projectName>')
-.description('create new ICP project')
-.action(async (projectName) => {
-  const { backendLanguage } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'backendLanguage',
-      message: 'Select a backend language:',
-      choices: ['Rust',],
-      default: 'Rust',
-    },
-  ]);
+  .command('new <projectName>')
+  .description('create new ICP project')
+  .action(async (projectName) => {
+    const { backendLanguage } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'backendLanguage',
+        message: 'Select a backend language:',
+        choices: ['Rust',],
+        default: 'Rust',
+      },
+    ]);
 
-  const {frontendLanguage}  = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'frontendLanguage',
-      message: 'Select a Frontend language:',
-      choices: ['React', 'Vue', 'None'],
-      default: 'React',
-    },
-  ]);
-  
-  await createIcpProject(projectName, backendLanguage, frontendLanguage);
-  console.log(`cd ${projectName}/`);
-  console.log("icp deploy");
-  console.log("ICP project created successfully");
-});
+    const { frontendLanguage } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'frontendLanguage',
+        message: 'Select a Frontend language:',
+        choices: ['React', 'Vue', 'None'],
+        default: 'React',
+      },
+    ]);
 
- program
- .command("cwd")
- .description("Display the current working directory")
- .action(() => {
- console.log(`Current working directory: ${process.cwd()}`);
- });
+    await createIcpProject(projectName, backendLanguage, frontendLanguage);
+    console.log(`cd ${projectName}/`);
+    console.log("icp deploy");
+    console.log("ICP project created successfully");
+  });
+
+program
+  .command("cwd")
+  .description("Display the current working directory")
+  .action(() => {
+    console.log(`Current working directory: ${process.cwd()}`);
+  });
 
 program
   .command("deploy")
-  .option("--ic", "--ic is to deploy project on-mainnet")
   .description("List canisters and their categories (backend/frontend)")
-  .action((options) => {
-    createAndInstallCanisters(options);
+  .action(async () => {
+    if (!checkIcWasm()) {
+      console.log(
+        "\x1b[31m%s\x1b[0m",
+        "Error: ic-wasm is not installed. Please install it using:"
+      );
+      console.log("\x1b[32m%s\x1b[0m", "cargo install ic-wasm");
+      process.exit(1);
+    }
+    createAndInstallCanisters();
   });
 
 program.parse(process.argv);
