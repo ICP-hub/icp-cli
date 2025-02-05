@@ -13,15 +13,35 @@ import inquirer from 'inquirer';
 import { faucerCoupon } from "../redeem-coupon/faucetCycles";
 const { execSync } = require("child_process");
 
-function checkIcWasm() {
+const isInstalled = (cmd : string) => {
   try {
-    execSync("ic-wasm --version", { stdio: "ignore" });
+    execSync(`${cmd} --version`, { stdio: "ignore" });
     return true;
   } catch (error) {
-    console.log("not install bro", error);
     return false;
   }
-}
+};
+
+const checkDependencies = () => {
+  const missing = [];
+  if (!isInstalled("ic-wasm")) missing.push("ic-wasm");
+  if (!isInstalled("rustc")) missing.push("rustc");
+
+  if (missing.length > 0) {
+    console.log(`\n❌ Missing dependencies: ${missing.join(", ")}\n`);
+    console.log("🔧 Please install the missing dependencies using:\n");
+
+    if (missing.includes("ic-wasm")) {
+      console.log("  👉 Install ic-wasm: `cargo install ic-wasm`");
+    }
+    if (missing.includes("rustc")) {
+      console.log("  👉 Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`");
+    }
+
+    console.log("\nAfter installation, restart your terminal and try again.\n");
+    process.exit(1);
+  }
+};
 
 program
   .name(appName)
@@ -83,20 +103,13 @@ program
   .description("Display the current working directory")
   .action(() => {
     console.log(`Current working directory: ${process.cwd()}`);
-  });
+});
 
 program
   .command("deploy")
   .description("List canisters and their categories (backend/frontend)")
   .action(async () => {
-    if (!checkIcWasm()) {
-      console.log(
-        "\x1b[31m%s\x1b[0m",
-        "Error: ic-wasm is not installed. Please install it using:"
-      );
-      console.log("\x1b[32m%s\x1b[0m", "cargo install ic-wasm");
-      process.exit(1);
-    }
+    checkDependencies();
     createAndInstallCanisters();
   });
 
