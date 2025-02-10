@@ -11,9 +11,10 @@ import { createAndInstallCanisters } from "../commands/allCanisters";
 import { createIcpProject } from "../commands/installProject";
 import inquirer from 'inquirer';
 import { faucerCoupon } from "../redeem-coupon/faucetCycles";
+import { Principal } from "@dfinity/principal";
 const { execSync } = require("child_process");
 
-const isInstalled = (cmd : string) => {
+const isInstalled = (cmd: string) => {
   try {
     execSync(`${cmd} --version`, { stdio: "ignore" });
     return true;
@@ -44,29 +45,17 @@ const checkDependencies = () => {
 };
 
 program
+  .command("deploy")
+  .description("List canisters and their categories (backend/frontend)")
+  .action(async () => {
+    checkDependencies();
+    createAndInstallCanisters();
+  });
+
+program
   .name(appName)
   .description(appDescription)
   .version(appVersion);
-
-program
-  .command('init')
-  .description('Initialize the project')
-  .action(init);
-
-program
-  .command('build')
-  .description('Build the project')
-  .action(build);
-
-program
-  .command('help')
-  .description('Show help information')
-  .action(help);
-
-program
-  .command('redeem')
-  .description('create new icp project')
-  .action(faucerCoupon);
 
 program
   .command('new <projectName>')
@@ -99,18 +88,22 @@ program
   });
 
 program
+  .command('redeem <toPrincipalId> <couponId>')
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (toPrincipalId : string,couponId :string) => {
+    await faucerCoupon(toPrincipalId, couponId);
+  });
+
+program
   .command("cwd")
   .description("Display the current working directory")
   .action(() => {
     console.log(`Current working directory: ${process.cwd()}`);
-});
+  });
 
 program
-  .command("deploy")
-  .description("List canisters and their categories (backend/frontend)")
-  .action(async () => {
-    checkDependencies();
-    createAndInstallCanisters();
-  });
+  .command('help')
+  .description('Show help information')
+  .action(help);
 
 program.parse(process.argv);

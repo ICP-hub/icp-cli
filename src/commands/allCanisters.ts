@@ -45,7 +45,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
     const copyAssetStorageDid = (name: string) => {
       const targetPaths = [
-        path.resolve(".dfx", "local", "canisters", name, "assetstorage.did"),
+        path.resolve(".dfx", "ic", "canisters", name, "assetstorage.did"),
         path.resolve("src", "declarations", name, "assetstorage.did"),
       ];
 
@@ -89,7 +89,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
           const newDidFilePath2 = path.resolve(
             ".dfx",
-            "local",
+            "ic",
             "canisters",
             name,
             "service.did"
@@ -114,7 +114,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
           const newWasmPath = path.resolve(
             ".dfx",
-            "local",
+            "ic",
             "canisters",
             name,
             `${name}.wasm`
@@ -173,15 +173,15 @@ async function createAgent(): Promise<HttpAgent> {
   // const principal : any = Pharsekey?.getPrincipal();
   // console.log("principal",principal.toText());
 
-  const host = "http://127.0.0.1:4943";
-  // const host = "https://ic0.app";
+  // const host = "http://127.0.0.1:4943";
+  const host = "https://ic0.app";
   // process.env.DFX_NETWORK === "local"
   // ? "http://127.0.0.1:4943"
   // : "https://ic0.app";
 
   const agent = new HttpAgent({ identity: Pharsekey, host });
   // if (process.env.DFX_NETWORK === "local") {
-  await agent.fetchRootKey();
+  // await agent.fetchRootKey();
   // }
   return agent;
 }
@@ -230,7 +230,7 @@ export async function createAndInstallCanisters() {
       } else {
         console.log(`Created frontend canister: ${newCanisterId}`);
         await install(managementCanister, newCanisterId, canister.wasmPath);
-        const filePath: any = path.resolve(process.cwd(), ".dfx", "local", "canisters", canister.name, "assetstorage.did")
+        const filePath: any = path.resolve(process.cwd(), ".dfx", "ic", "canisters", canister.name, "assetstorage.did")
         try {
           if (!fs.existsSync(filePath)) {
             throw new Error(`filePath does not exist at: ${filePath}`);
