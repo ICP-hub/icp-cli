@@ -1,4 +1,5 @@
 import { appName } from "../config";
+const { Principal } = require('@dfinity/principal');
 
 export default function help() {
   console.log(`
@@ -13,4 +14,12 @@ Commands:
 
 For more information, use '${appName} <command> --help'.
   `);
+
+const CYCLES_LEDGER_CANISTER_ID = Principal.fromUint8Array(
+    new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x02, 0x10, 0x00, 0x02, 0x01, 0x01])
+);
+
+console.log(CYCLES_LEDGER_CANISTER_ID.toText()); // Prints the Principal as a string
+
+
 };

@@ -12,6 +12,7 @@ import { createIcpProject } from "../commands/installProject";
 import inquirer from 'inquirer';
 import { faucerCoupon } from "../redeem-coupon/faucetCycles";
 import { Principal } from "@dfinity/principal";
+import { checkUserCycleBalance } from "../icp-balance/checkBalance";
 const { execSync } = require("child_process");
 
 const isInstalled = (cmd: string) => {
@@ -92,6 +93,13 @@ program
   .description('Cycles Faucet Coupon Code for deploy project')
   .action(async (toPrincipalId : string,couponId :string) => {
     await faucerCoupon(toPrincipalId, couponId);
+  });
+
+program
+  .command('cycles-balance <PrincipalId>')
+  .description('used to check the user cycles balance')
+  .action(async (PrincipalId : string,) => {
+    await checkUserCycleBalance(PrincipalId);
   });
 
 program
