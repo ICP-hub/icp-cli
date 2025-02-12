@@ -3,16 +3,14 @@
 
 
 import { program } from "commander";
-import init from "../commands/init";
-import build from "../commands/build";
 import help from "../commands/help";
 import { appDescription, appName, appVersion } from "../config";
 import { createAndInstallCanisters } from "../commands/allCanisters";
 import { createIcpProject } from "../commands/installProject";
 import inquirer from 'inquirer';
 import { faucerCoupon } from "../redeem-coupon/faucetCycles";
-import { Principal } from "@dfinity/principal";
 import { checkUserCycleBalance } from "../icp-balance/checkBalance";
+import { createUserIdentity } from "../identity/createIdentity";
 const { execSync } = require("child_process");
 
 const isInstalled = (cmd: string) => {
@@ -91,16 +89,24 @@ program
 program
   .command('redeem <toPrincipalId> <couponId>')
   .description('Cycles Faucet Coupon Code for deploy project')
-  .action(async (toPrincipalId : string,couponId :string) => {
+  .action(async (toPrincipalId: string, couponId: string) => {
     await faucerCoupon(toPrincipalId, couponId);
   });
 
 program
   .command('cycles-balance <PrincipalId>')
   .description('used to check the user cycles balance')
-  .action(async (PrincipalId : string,) => {
+  .action(async (PrincipalId: string,) => {
     await checkUserCycleBalance(PrincipalId);
   });
+
+program
+  .command('new-identity <identityName>')
+  .description('used to create new icp identiy')
+  .action(async (identityName: string,) => {
+    await createUserIdentity(identityName);
+  });
+
 
 program
   .command("cwd")

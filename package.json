@@ -24,6 +24,7 @@
     "nanospinner": "^1.2.0",
     "nodemon": "^3.1.7",
     "shelljs": "^0.8.5",
+    "tweetnacl": "^1.0.3",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
