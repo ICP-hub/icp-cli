@@ -10,8 +10,6 @@ import getActor from "./getActor.js";
 import { Secp256k1KeyIdentity } from "@dfinity/identity-secp256k1";
 import { createCanisterActor } from "../canisterActor/authClient.js";
 const { execSync } = require("child_process");
-
-
 dotenv.config();
 
 interface CanisterDetail {
@@ -35,9 +33,9 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
     const dfxConfig = JSON.parse(data);
     const canisters = dfxConfig.canisters || {};
 
-    const assetstorageDid = path.resolve(
-      "/home/anish/Icp-hub/dfx-node/src/commands/assetstorage.did"
-    );
+
+    const assetstorageDid = path.resolve(__dirname,"../../src/commands/assetstorage.did");
+
 
     if (!fs.existsSync(assetstorageDid)) {
       throw new Error(`assetstorage.did file not found: ${assetstorageDid}`);
@@ -147,7 +145,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
             `${name}.did.js`
           );
           copyAssetStorageDid(name);
-          wasmPath = "/home/anish/Icp-hub/dfx-node/assetstorage.wasm";
+          wasmPath = path.resolve(__dirname, "../../assetstorage.wasm");
         }
 
         return {
@@ -211,13 +209,13 @@ export async function createAndInstallCanisters() {
     for (const canister of canisterDetails) {
       const managementCanister = ICManagementCanister.create({ agent });
       let newCanisterId: any;
-        try {
-          const actor = await createCanisterActor();
-          let data : any= await actor?.get_canister_id();
-          newCanisterId = data.Ok;
-        } catch (error) {
-          console.log("error detucted : ",error);
-        }
+      try {
+        const actor = await createCanisterActor();
+        let data: any = await actor?.get_canister_id();
+        newCanisterId = data.Ok;
+      } catch (error) {
+        console.log("error detucted : ", error);
+      }
       if (newCanisterId && canister.name) {
         await updateCanisterDataFile(
           canister.name,
@@ -255,7 +253,7 @@ export async function createAndInstallCanisters() {
         const feActor = await getActor(agent, newCanisterId);
         await uploadFrontEndAssets(feActor, newCanisterId, canister.name);
         console.log(`\x1b[1mCode installed successfully for canister:\x1b[0m\x1b[1;34mhttps://${newCanisterId}.icp0.io/\x1b[0m`);
-  
+
       }
     }
   } catch (error) {

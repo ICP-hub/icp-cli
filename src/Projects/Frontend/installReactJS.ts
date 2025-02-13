@@ -47,11 +47,12 @@ export const installReactFrontend = async (projectName: String, projectPath: Str
             shell: true,
         })
 
-        const IcpLogo = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/logo2.svg");
-        const ICPAppfile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/App.jsx");
-        const indexhtmlFile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/index.html");
-        const mainFile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/main.jsx");
-        const scssFile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/index.scss");
+        const IcpLogo = path.resolve(__dirname, "../../../src/frontenddetails/logo2.svg");
+        const ICPAppfile = path.resolve(__dirname, "../../../src/frontenddetails/App.jsx");
+        const indexhtmlFile = path.resolve(__dirname, "../../../src/frontenddetails/index.html");
+        const mainFile = path.resolve(__dirname, "../../../src/frontenddetails/main.jsx");
+        const scssFile = path.resolve(__dirname, "../../../src/frontenddetails/index.scss");
+        
 
         const frontendPath = path.resolve(projectPath, `src/${projectName}_frontend`);
         const srcPath = path.join(frontendPath, "src");
