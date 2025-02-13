@@ -21,7 +21,7 @@ function App() {
         <button type="submit">Click Me!</button>
       </form>
       {
-        greeting && <section id="greeting">hello! ${greeting}</section>
+        greeting && <section id="greeting">hello! {greeting}</section>
       }
     </main>
   );
