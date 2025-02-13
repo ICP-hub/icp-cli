@@ -11,6 +11,8 @@ import inquirer from 'inquirer';
 import { faucerCoupon } from "../redeem-coupon/faucetCycles";
 import { checkUserCycleBalance } from "../icp-balance/checkBalance";
 import { createUserIdentity } from "../identity/createIdentity";
+import { getCurrentPrincipal } from "../identity/getPrincipal";
+import { useIdentity } from "../identity/useIdentity";
 const { execSync } = require("child_process");
 
 const isInstalled = (cmd: string) => {
@@ -102,11 +104,24 @@ program
 
 program
   .command('new-identity <identityName>')
-  .description('used to create new icp identiy')
-  .action(async (identityName: string,) => {
+  .description('used to create new identiy')
+  .action(async (identityName: string) => {
     await createUserIdentity(identityName);
   });
 
+program
+  .command('identity-get-principal')
+  .description('Used to get the Principal id of the currently active identity')
+  .action(async () => {
+    await getCurrentPrincipal();
+  });
+
+program
+  .command('identity-use <identityName>')
+  .description('used to set the identity through identity name')
+  .action(async (identityName: string) => {
+    await useIdentity(identityName);
+  });
 
 program
   .command("cwd")

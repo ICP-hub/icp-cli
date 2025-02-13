@@ -23,9 +23,25 @@ export const createUserIdentity = async (identityName: string) => {
         const dfxIdentityPath = path.join(os.homedir(), '.config', 'dfx', 'identity', identityName);
         await fs.mkdir(dfxIdentityPath, { recursive: true });
         const pemPath = path.join(dfxIdentityPath, 'identity.pem');
-        await fs.writeFile(pemPath, privateKey, { mode: 0o600 });
+        const jsonPath = path.join(dfxIdentityPath, 'identity.json');
 
-        const principal = Principal.selfAuthenticating(publicKey);
+        await fs.writeFile(pemPath, privateKey, { mode: 0o600 });
+        const identityJsonContent = JSON.stringify(
+        {
+          hsm: null,
+          encryption: null,
+          keyring_identity_suffix: identityName,
+        },
+        null,
+        2
+      );
+      await fs.writeFile(jsonPath, identityJsonContent, { mode: 0o600 });
+
+      
+        const principal : Principal = Principal.selfAuthenticating(publicKey);
+        const identityConfigPath = path.join(os.homedir(), '.config', 'dfx', 'identity.json');
+        await fs.writeFile(identityConfigPath, JSON.stringify({ default: identityName }, null, 2), { mode: 0o600 });
+
         console.log(`Principal ID: ${principal.toText()}`);
 
     } catch (error) {
