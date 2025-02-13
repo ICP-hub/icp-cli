@@ -1,6 +1,6 @@
 {
-  "name": "dfx-node",
-  "version": "1.0.0",
+  "name": "icp-test",
+  "version": "1.0.1",
   "description": "dfx on JS",
   "bin": {
     "icp-test": "./dist/bin/cli.js"
