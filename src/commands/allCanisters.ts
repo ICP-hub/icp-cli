@@ -225,10 +225,10 @@ export async function createAndInstallCanisters() {
       }
 
       if (canister.category === "backend") {
-        console.log(`Created backend canister: ${newCanisterId}`);
         await install(managementCanister, newCanisterId, canister.wasmPath);
+        console.log(`\x1b[1mCreated backend canister:\x1b[0m \x1b[1;34mhttps://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=${newCanisterId}\x1b[0m`);
       } else {
-        console.log(`Created frontend canister: ${newCanisterId}`);
+        console.log(`frontend canister is creating...`);
         await install(managementCanister, newCanisterId, canister.wasmPath);
         const filePath: any = path.resolve(process.cwd(), ".dfx", "local", "canisters", canister.name, "assetstorage.did")
         try {
@@ -254,7 +254,8 @@ export async function createAndInstallCanisters() {
         }
         const feActor = await getActor(agent, newCanisterId);
         await uploadFrontEndAssets(feActor, newCanisterId, canister.name);
-        console.log(`Code installed successfully for canister: ${newCanisterId}`);
+        console.log(`\x1b[1mCode installed successfully for canister:\x1b[0m\x1b[1;34mhttps://${newCanisterId}.icp0.io/\x1b[0m`);
+  
       }
     }
   } catch (error) {

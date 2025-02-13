@@ -1,14 +1,23 @@
 import { Secp256k1KeyIdentity } from "@dfinity/identity-secp256k1";
 import { Principal } from "@dfinity/principal";
 import { checkCyclesBalance } from "./checkCycleBalance";
+import { getCurrentPrincipal } from "../identity/getPrincipal";
 
 
-export const checkUserCycleBalance = async (PrincipalId: string) => {
+export const checkUserCycleBalance = async (PrincipalId?: string) => {
     const identity = Secp256k1KeyIdentity.fromSeedPhrase("earth input twelve fog improve voyage life ill atom turkey inside one loop digital valley miracle torch hedgehog oak time glove liberty fabric orange");
     const faucetPrincipal: Principal =
         Principal.fromUint8Array(
             new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x02, 0x10, 0x00, 0x02, 0x01, 0x01]));
     try {
+        if (!PrincipalId) {
+            const principal = await getCurrentPrincipal();
+            if (!principal) {
+                throw new Error("Failed to retrieve current principal");
+            }
+            PrincipalId = principal.toText();
+        }
+        
         const userPrincipalId: Principal = Principal.fromText(PrincipalId);
         const result = await checkCyclesBalance(userPrincipalId, faucetPrincipal, identity);
         

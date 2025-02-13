@@ -24,7 +24,7 @@ export const getCurrentPrincipal = async () => {
 
         const principal : Principal = identity.getPrincipal();
         console.log("principal : ", principal.toText());
-        
+        return principal;
     } catch (error) {
         console.error('❌ Error getting current principal:', error);
         return null;

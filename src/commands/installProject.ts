@@ -26,7 +26,7 @@ export async function createIcpProject(projectName: String, backendLanguage: Str
 
       ...(frontendLanguage !== "None" && {
         [`${projectName}_frontend`]: {
-          "dependencies": [`${projectName}_frontend`],
+          "dependencies": [`${projectName}_backend`],
           "source": [`src/${projectName}_frontend/dist`],
           "type": "assets",
           "workspace": `${projectName}_frontend`,

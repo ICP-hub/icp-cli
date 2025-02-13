@@ -41,11 +41,32 @@ export const installReactFrontend = async (projectName: String, projectPath: Str
             shell: true,
         });
 
-        await execSync(installNodeModule, {
-            cwd: `${projectPath}/src/${projectName}_frontend`,
+        await execSync("npm install -D sass-embedded",{
+             cwd: `${projectPath}`,
             stdio: "inherit",
             shell: true,
-        });
+        })
+
+        const IcpLogo = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/logo2.svg");
+        const ICPAppfile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/App.jsx");
+        const indexhtmlFile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/index.html");
+        const mainFile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/main.jsx");
+        const scssFile = path.resolve("/home/anish/Icp-hub/dfx-node/src/frontenddetails/index.scss");
+
+        const frontendPath = path.resolve(projectPath, `src/${projectName}_frontend`);
+        const srcPath = path.join(frontendPath, "src");
+        const publicPath = path.join(frontendPath, "public");
+
+        if (!fs.existsSync(srcPath)) fs.mkdirSync(srcPath, { recursive: true });
+        if (!fs.existsSync(publicPath)) fs.mkdirSync(publicPath, { recursive: true });
+
+        await fs.copyFileSync(scssFile, path.join(srcPath, "index.scss")); 
+        await fs.copyFileSync(indexhtmlFile, path.join(frontendPath, "index.html"));
+        await fs.copyFileSync(ICPAppfile, path.join(srcPath, "App.jsx")); 
+        await fs.copyFileSync(IcpLogo, path.join(publicPath, "logo2.svg")); 
+        await fs.copyFileSync(mainFile, path.join(srcPath, "main.jsx")); 
+
+        console.log("Files replaced successfully.");
     } catch (err) {
         console.error("Error initializing npm:", err);
     }

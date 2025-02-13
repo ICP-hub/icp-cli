@@ -96,9 +96,9 @@ program
   });
 
 program
-  .command('cycles-balance <PrincipalId>')
+  .command('cycles-balance [PrincipalId]')
   .description('used to check the user cycles balance')
-  .action(async (PrincipalId: string,) => {
+  .action(async (PrincipalId?: string,) => {
     await checkUserCycleBalance(PrincipalId);
   });
 
