@@ -6,11 +6,11 @@ This project is an **npm package** designed to simplify the creation, deployment
 With this package, users can :  
 1. Create a new ICP project
 2. Deploy canisters on the mainnet.  
-3. Redeem a coupon for any identity using the principal ID.
-4. Check the cycles balance of any identity using the principal ID
+3. Redeem a coupon for any identity using the coupon and principal ID .
+4. Check the cycles balance of any identity using the principal ID.
 5. Create a new ICP identity.
-6. Retrieve the principal of the local identities.
-7. Switch to a different identity using its name.
+6. Retrieve the principal of the local identity.
+7. Switch to a different local identity using its name.
 8. Display the path of the current location.
 9. Show help information about the commands.
 
