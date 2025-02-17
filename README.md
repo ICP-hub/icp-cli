@@ -1,17 +1,4 @@
-# Node.js Project for Agent and Canister Creation  
-
-## Table of Contents  
-- help	Show help information about the commands.
-- cwd	Display the path of the current location.
-- deploy	Deploy canisters on the mainnet.
-- new <projectName>	Create a new ICP project.
-- redeem <toPrincipalId> <couponId>	Redeem a coupon for any identity using the principal ID.
-- cycles-balance [PrincipalId]	Check the cycles balance of any identity using the principal ID.
-- new-identity <identityName>	Create a new ICP identity.
-- identity-get-principal	Retrieve the principal of the currently active identity.
-- identity-use <identityName>	Switch to a different identity using its name.
-
----  
+# Node.js Project for Agent and Canister Creation setup the without dfx 
 
 ## Introduction  
 
@@ -31,9 +18,10 @@ With this package, users can:
 
 ## Features  
 
-- Easy setup and configuration for agents and canisters.  
+- Easy setup and configuration for canisters creation and deployment.  
 - Command-based execution for flexibility.  
-- View canister status after creation.  
+- Create an identity, use it, and retrieve the principal ID of identities.
+- Redeem coupons on any user identity's principal.
 
 ---  
 
@@ -48,20 +36,16 @@ Before using this project, ensure you have the following installed:
 
 ## Installation  
 
-1. Clone the repository:  
-   ```bash  
-  [ git clone https://github.com/your-username/your-repository.git  ](https://github.com/ICP-hub/dfx-node)
-
-1. install dependencies:  
+1. Clone the repository: 
  ```bash  
- npm install
+ git clone https://github.com/ICP-hub/dfx-node
 ```
 
-1. run dependencies:  
+2. run dependencies:  
  ```bash  
  npm run build
 ```
-1. run dependencies:  
+3. run dependencies:  
  ```bash  
  npm link 
 ```
