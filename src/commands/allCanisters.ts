@@ -68,8 +68,10 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
         if (type === "rust") {
           console.log("Building Rust project...");
+          execSync("rustup update");
+          execSync("rustup target add wasm32-unknown-unknown");
           execSync("cargo build --release --target wasm32-unknown-unknown", { stdio: "inherit" });
-          copyAssetStorageDid(name);
+          copyAssetStorageDid(name);  
 
           const didFileName = `${name}.did`;
           const didFilePath = path.resolve("src", name, didFileName);

@@ -1,28 +1,45 @@
-# Command-Line Usage Guide
+# Node.js project for canisters creation and deployment.
 
-## Usage:
-```sh
-$ icp-test <command>
-$ icp-test <command> --help
+## Introduction  
 
-This format makes the command list more readable and structured properly for a `README.md`. Let me know if you need further refinements! 🚀
+This project is an **npm package** designed to simplify the creation, deployment and management of the identities without setup dfx.  
+With this package, users can :  
+1. Create a new ICP project
+2. Deploy canisters on the mainnet.  
+3. Redeem a coupon for any identity using the coupon and principal ID .
+4. Check the cycles balance of any identity using the principal ID.
+5. Create a new ICP identity.
+6. Retrieve the principal of the local identity.
+7. Switch to a different local identity using its name.
+8. Display the path of the current location.
+9. Show help information about the commands.
 
-Available Commands:
-Command	Description
-help	Show help information about the commands.
-cwd	Display the path of the current location.
-deploy	Deploy canisters on the mainnet.
-new <projectName>	Create a new ICP project.
-redeem <toPrincipalId> <couponId>	Redeem a coupon for any identity using the principal ID.
-cycles-balance [PrincipalId]	Check the cycles balance of any identity using the principal ID.
-new-identity <identityName>	Create a new ICP identity.
-identity-get-principal	Retrieve the principal of the currently active identity.
-identity-use <identityName>	Switch to a different identity using its name.
+---  
 
+## Features  
 
-### **How to Save It as `README.md`?**  
-1. Create a file named `README.md` in your project directory.  
-2. Copy and paste the above content into the file.  
-3. Save the file.  
+- Easy setup and configuration for canisters creation and deployment.  
+- Command-based execution for flexibility.  
+- Create an identity, use it, and retrieve the principal ID of identities.
+- Redeem coupons on any user identity's principal.
 
-Now your `README.md` will display a properly formatted **Available Commands** table when viewed on GitHub or any markdown-supported platform. 🚀
+---  
+
+## Prerequisites  
+
+Before using this project, ensure you have the following installed:  
+
+- [Node.js](https://nodejs.org/) (v14 or higher)  
+- [npm](https://www.npmjs.com/) (v6 or higher)  
+- [cargo](1.84 or higher)  
+- [ic-wasm](0.9.5 or higher)
+- [rustc](1.84.1 or higher)
+
+---  
+
+## Installation  
+
+1. Install package :  
+ ```bash  
+ npm i -g icp-test
+```
