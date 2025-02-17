@@ -1,4 +1,4 @@
-# Node.js Project for Agent and Canister Creation setup the without dfx 
+# Node.js project for canisters creation and deployment.
 
 ## Introduction  
 
