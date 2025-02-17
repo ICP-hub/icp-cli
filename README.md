@@ -2,8 +2,8 @@
 
 ## Introduction  
 
-This project is an **npm package** designed to simplify the creation and management of agents and canisters without setup dfx.  
-With this package, users can:  
+This project is an **npm package** designed to simplify the creation, deployment and management of the identities without setup dfx.  
+With this package, users can :  
 1. Create a new ICP project
 2. Deploy canisters on the mainnet.  
 3. Redeem a coupon for any identity using the principal ID.
