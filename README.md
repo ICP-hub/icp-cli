@@ -49,7 +49,7 @@ Before using this project, ensure you have the following installed:
 
 - [Node.js](https://nodejs.org/) (v14 or higher)  
 - [npm](https://www.npmjs.com/) (v6 or higher)  
-x`- [ic-wasm](0.9.5 or higher)
+- [ic-wasm](0.9.5 or higher)
 - [rustc](1.84.1 or higher)
 
 ---  
