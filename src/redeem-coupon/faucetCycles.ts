@@ -9,8 +9,12 @@ export const faucerCoupon = async (toPrincipalId: string, couponId: string) => {
     try {
         const toSubaccount = Principal.fromText(toPrincipalId);
         const result = await redeemFaucetCoupon(couponId,toSubaccount,faucetPrincipal, identity);
-        console.log(" result ", result);
-    } catch (error) {
-        console.error('Failed to redeem coupon : ', error);
+        console.log("result : ",result);
+    } catch (error: any) {
+        if (error?.props) {
+            console.log("Error redeem coupon : ",error?.props);
+        }else{
+            console.log(error);
+        }
     }
 }

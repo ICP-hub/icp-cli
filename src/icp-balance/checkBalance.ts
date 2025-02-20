@@ -27,6 +27,6 @@ export const checkUserCycleBalance = async (PrincipalId?: string) => {
         console.log(formattedResult, "TC (trillion cycles).");
 
     } catch (error) {
-        console.error('Failed to redeem coupon : ', error);
+        console.error('Failed to check balance : ', error);
     }
 }

@@ -17,8 +17,7 @@ export async function redeemFaucetCoupon(
         subaccount: []
       });
       return result; 
-  } catch (error) {
-    console.error("Error redeeming coupon:", error);
+  } catch (error : any) {
     throw error;
   }
 }
