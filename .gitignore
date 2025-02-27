@@ -1,21 +1,20 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-env
-*.local
-# Editor directories and files
-.vscode/*
+
+# Outputs
+dist/
+
+#IDEs
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 !.vscode/extensions.json
-.idea
+
+# modules
+node_modules
+
+#private
+.env
+
+# Mac OSX Finder files.
+**/.DS_Store
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
