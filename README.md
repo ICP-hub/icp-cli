@@ -59,7 +59,7 @@ Before using this project, ensure you have the following installed:
 1. Install package :  
  ```bash  
  npm i -g icp-test
-
+```
 1. Clone the repository: 
  ```bash  
  git clone https://github.com/ICP-hub/dfx-node
