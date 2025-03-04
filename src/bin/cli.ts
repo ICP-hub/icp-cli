@@ -101,7 +101,7 @@ const checkAndCutUserCycles = async () => {
       console.error("❌ You don't have", formattedResult, "trillion cycles");
       return;
     } else {
-      // await transferCyclesToCanister(NeededCycles, targetPrincipal);
+      await transferCyclesToCanister(NeededCycles, targetPrincipal);
       await createAndInstallCanisters();
     }
   } catch (error) {
