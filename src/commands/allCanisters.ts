@@ -2,13 +2,12 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 import { HttpAgent } from "@dfinity/agent";
-import { Ed25519KeyIdentity } from "@dfinity/identity";
 import { ICManagementCanister, InstallMode } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import { IDL } from "@dfinity/candid";
 import getActor from "./getActor.js";
-import { Secp256k1KeyIdentity } from "@dfinity/identity-secp256k1";
-import { createCanisterActor } from "../canisterActor/authClient.js";
+import { createCanisterActor, getIdentity } from "../canisterActor/authClient.js";
+
 const { execSync } = require("child_process");
 dotenv.config();
 
@@ -34,7 +33,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
     const canisters = dfxConfig.canisters || {};
 
 
-    const assetstorageDid = path.resolve(__dirname,"../../src/commands/assetstorage.did");
+    const assetstorageDid = path.resolve(__dirname, "../../src/res/assetstorage.did");
 
 
     if (!fs.existsSync(assetstorageDid)) {
@@ -71,7 +70,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           execSync("rustup update");
           execSync("rustup target add wasm32-unknown-unknown");
           execSync("cargo build --release --target wasm32-unknown-unknown", { stdio: "inherit" });
-          copyAssetStorageDid(name);  
+          copyAssetStorageDid(name);
 
           const didFileName = `${name}.did`;
           const didFilePath = path.resolve("src", name, didFileName);
@@ -102,7 +101,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
             "target",
             "wasm32-unknown-unknown",
             "release",
-            `${name}.wasm`
+            `${name.replace(/-/g, '_')}.wasm`
           );
 
           const outputWasmPath = path.resolve(
@@ -147,7 +146,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
             `${name}.did.js`
           );
           copyAssetStorageDid(name);
-          wasmPath = path.resolve(__dirname, "../../assetstorage.wasm");
+          wasmPath = path.resolve(__dirname, "../../src/res/assetstorage.wasm");
         }
 
         return {
@@ -168,21 +167,14 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 };
 
 async function createAgent(): Promise<HttpAgent> {
-  const Pharsekey = Secp256k1KeyIdentity.fromSeedPhrase("earth input twelve fog improve voyage life ill atom turkey inside one loop digital valley miracle torch hedgehog oak time glove liberty fabric orange");
-
-  // const principal : any = Pharsekey?.getPrincipal();
-  // console.log("principal",principal.toText());
-
-  // const host = "http://127.0.0.1:4943";
+  let identity: any;
+  try {
+    identity = await getIdentity();
+  } catch (error) {
+    console.log("error : ", error);
+  }
   const host = "https://ic0.app";
-  // process.env.DFX_NETWORK === "local"
-  // ? "http://127.0.0.1:4943"
-  // : "https://ic0.app";
-
-  const agent = new HttpAgent({ identity: Pharsekey, host });
-  // if (process.env.DFX_NETWORK === "local") {
-  // await agent.fetchRootKey();
-  // }
+  const agent = new HttpAgent({ identity, host });
   return agent;
 }
 
@@ -339,27 +331,37 @@ async function getFiles(
   fileList: string[] = [],
   baseDir = dir
 ): Promise<string[]> {
-  const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir.toString(), entry.name);
-    if (entry.isDirectory()) {
-      await getFiles(fullPath, fileList, baseDir);
-    } else {
-      const relativePath = path.relative(baseDir.toString(), fullPath);
-      fileList.push(relativePath);
+  try {
+    const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir.toString(), entry.name);
+      if (entry.isDirectory()) {
+        await getFiles(fullPath, fileList, baseDir);
+      } else {
+        const relativePath = path.relative(baseDir.toString(), fullPath);
+        fileList.push(relativePath);
+      }
     }
+    return fileList;
+  } catch (error) {
+    console.error(`❌ Error reading directory ${dir.toString()}:`, error);
+    throw error;
   }
-  return fileList;
 }
 
 function getMimeType(fileName: string): string {
-  if (fileName.endsWith(".html")) return "text/html";
-  if (fileName.endsWith(".css")) return "text/css";
-  if (fileName.endsWith(".js")) return "application/javascript";
-  if (fileName.endsWith(".svg")) return "image/svg+xml";
-  if (fileName.endsWith(".png")) return "image/png";
-  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
-  return "application/octet-stream";
+  try {
+    if (fileName.endsWith(".html")) return "text/html";
+    if (fileName.endsWith(".css")) return "text/css";
+    if (fileName.endsWith(".js")) return "application/javascript";
+    if (fileName.endsWith(".svg")) return "image/svg+xml";
+    if (fileName.endsWith(".png")) return "image/png";
+    if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
+    return "application/octet-stream";
+  } catch (error) {
+    console.error(`❌ Error determining MIME type for ${fileName}:`, error);
+    return "application/octet-stream";
+  }
 }
 
 

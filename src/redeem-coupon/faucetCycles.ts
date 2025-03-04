@@ -1,10 +1,10 @@
-import { Secp256k1KeyIdentity } from "@dfinity/identity-secp256k1";
 import { redeemFaucetCoupon } from "./RedeemCoupon";
 import { Principal } from "@dfinity/principal";
+import { getIdentity } from "../canisterActor/authClient";
 
 
 export const faucerCoupon = async (toPrincipalId: string, couponId: string) => {
-    const identity = Secp256k1KeyIdentity.fromSeedPhrase("earth input twelve fog improve voyage life ill atom turkey inside one loop digital valley miracle torch hedgehog oak time glove liberty fabric orange");
+   const identity = getIdentity();
     const faucetPrincipal: Principal = Principal.fromUint8Array(new Uint8Array([0, 0, 0, 0, 1, 112, 0, 196, 1, 1]));
     try {
         const toSubaccount = Principal.fromText(toPrincipalId);

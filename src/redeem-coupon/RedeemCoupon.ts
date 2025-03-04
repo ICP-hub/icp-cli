@@ -1,6 +1,6 @@
 import { Principal } from "@dfinity/principal";
 import { Actor, HttpAgent, toHex } from "@dfinity/agent";
-import { idlFactory } from "./idlFactory";
+import { idlFactory } from "../res/RedeemCyclesidlFactory";
 
 export async function redeemFaucetCoupon(
   couponId: string,
