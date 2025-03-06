@@ -19,7 +19,6 @@ interface CanisterDetail {
   frontendIdlFactoryPath?: any;
 }
 
-
 export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
   const dfxFilePath = path.resolve("dfx.json");
 
@@ -194,7 +193,6 @@ async function updateCanisterDataFile(canisterName: string, canisterId: Principa
   }
 }
 
-
 export async function createAndInstallCanisters() {
   try {
     const canisterDetails = await getCanisterDetails();
@@ -203,10 +201,42 @@ export async function createAndInstallCanisters() {
     for (const canister of canisterDetails) {
       const managementCanister = ICManagementCanister.create({ agent });
       let newCanisterId: any;
+      let installMode = "install";
       try {
-        const actor = await createCanisterActor();
-        let data: any = await actor?.get_canister_id();
-        newCanisterId = data.Ok;
+        const canisterIdPath = path.resolve(process.cwd(), 'canisterid.json');
+        if (fs.existsSync(canisterIdPath)) {
+          const data = await fs.promises.readFile(canisterIdPath, "utf-8");
+          const dfxConfig = JSON.parse(data);
+          if (canister.category == "backend") {
+            let canisterName = canister.name;
+            newCanisterId = Principal?.fromText(dfxConfig[canisterName]);
+            installMode = "reInstall";
+            const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId.toText()}\n`;
+            const envFilePath = path.join(process.cwd(), '.env');
+            if (fs.existsSync(envFilePath)) {
+              fs.appendFileSync(envFilePath, envData);
+            } else {
+              fs.writeFileSync(envFilePath, envData);
+            }
+          } else if (canister.category == "frontend") {
+            let canisterName = canister.name;
+            newCanisterId = Principal?.fromText(dfxConfig[canisterName])
+            installMode = "reInstall";
+            const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId.toText()}\n`;
+            const envFilePath = path.join(process.cwd(), '.env');
+            if (fs.existsSync(envFilePath)) {
+              fs.appendFileSync(envFilePath, envData);
+            } else {
+              fs.writeFileSync(envFilePath, envData);
+            }
+          }
+        } else {
+          // const actor = await createCanisterActor();
+          // let data: any = await actor?.get_canister_id();
+          // newCanisterId = data.Ok;
+          // const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_BACKEND=${newCanisterId.toText()}\n`;
+          // fs.writeFileSync(path.join(process.cwd(), '.env'), envData);
+        }
       } catch (error) {
         console.log("error detucted : ", error);
       }
@@ -217,11 +247,11 @@ export async function createAndInstallCanisters() {
       }
 
       if (canister.category === "backend") {
-        await install(managementCanister, newCanisterId, canister.wasmPath);
+        await install(managementCanister, newCanisterId, canister.wasmPath, installMode);
         console.log(`\x1b[1mCreated backend canister:\x1b[0m \x1b[1;34mhttps://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=${newCanisterId}\x1b[0m`);
       } else {
         console.log(`frontend canister is creating...`);
-        await install(managementCanister, newCanisterId, canister.wasmPath);
+        await install(managementCanister, newCanisterId, canister.wasmPath, installMode);
         const filePath: any = path.resolve(process.cwd(), ".dfx", "ic", "canisters", canister.name, "assetstorage.did")
         try {
           if (!fs.existsSync(filePath)) {
@@ -258,7 +288,8 @@ export async function createAndInstallCanisters() {
 async function install(
   managementCanister: ICManagementCanister,
   canisterId: Principal,
-  wasmPath: string
+  wasmPath: string,
+  installMode: string,
 ): Promise<void> {
   try {
     if (!fs.existsSync(wasmPath)) {
@@ -282,12 +313,23 @@ async function install(
 
     const arg: any = IDL.encode([candidType], [initArgs]);
 
-    await managementCanister.installCode({
-      mode: InstallMode.Install,
-      canisterId,
-      wasmModule,
-      arg: arg,
-    });
+    if (installMode == "install") {
+      await managementCanister.installCode({
+        mode: InstallMode.Install,
+        canisterId,
+        wasmModule,
+        arg: arg,
+      });
+    } else if (installMode == "reInstall") {
+      await managementCanister.installCode({
+        mode: InstallMode.Reinstall,
+        canisterId,
+        wasmModule,
+        arg: arg,
+      });
+    }
+
+
   } catch (error) {
     console.error(
       `Error during code installation for canister ${canisterId}:`,

@@ -1,12 +1,15 @@
 <script setup>
 import { ref } from 'vue';
+import { project_backend } from '../../declarations/project_backend';
 let greeting = ref('');
 
 async function handleSubmit(e) {
   e.preventDefault();
   const target = e.target;
   const name = target.querySelector('#name').value;
-  greeting.value = name;
+  await project_backend.greet(name).then((response) => {
+    greeting.value = response;
+    });
 }
 </script>
 
@@ -20,8 +23,6 @@ async function handleSubmit(e) {
       <input id="name" alt="Name" type="text" />
       <button type="submit">Click Me!</button>
     </form>
-    <section id="greeting" v-if="greeting">
-      Hello {{ greeting }}
-    </section>
+    <section id="greeting">{{ greeting }}</section>
   </main>
 </template>

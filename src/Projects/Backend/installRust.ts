@@ -1,8 +1,9 @@
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 
 
-export const installRustBakend = async (projectName: String, projectPath : String, dfxJson : any) => {
+export const installRustBakend = async (projectName: String, projectPath: String, dfxJson: any) => {
     const parentCargoFile = `
     [workspace]
     members = [
@@ -18,6 +19,7 @@ export const installRustBakend = async (projectName: String, projectPath : Strin
 
     fs.writeFileSync(path.join(projectPath, "Cargo.toml"), parentCargoFile.trim());
     const rustPath = path.join(projectPath, `src/${projectName}_backend`);
+    const declarations = path.join(projectPath, `src/declarations/${projectName}_backend`);
     const rustSrcPath = path.join(rustPath, "src");
     fs.mkdirSync(rustSrcPath, { recursive: true });
 
@@ -47,10 +49,33 @@ fn greet(name: String) -> String {
     const rustDid = ` service : {
     "greet": (text) -> (text) query;
     }; `;
+
     try {
-  fs.writeFileSync(path.join(rustPath, "Cargo.toml"), rustCargoToml.trim());
-  fs.writeFileSync(path.join(rustSrcPath, "lib.rs"), rustMain.trim());
-  fs.writeFileSync(path.join(rustPath, `${projectName}_backend.did`), rustDid.trim());
+        await fs.writeFileSync(path.join(rustPath, "Cargo.toml"), rustCargoToml.trim());
+        await fs.writeFileSync(path.join(rustSrcPath, "lib.rs"), rustMain.trim());
+        await fs.writeFileSync(path.join(rustPath, `${projectName}_backend.did`), rustDid.trim());
+        await fs.mkdirSync(declarations, { recursive: true });
+        await fs.writeFileSync(path.join(declarations, `${projectName}_backend.did`), rustDid.trim());
+
+        const projectAgentFilePath =
+            path.resolve(__dirname, "../../../src/res/agent_backend.did.js");
+        const indexFilePath = path.resolve(__dirname, "../../../src/res/index.js");
+
+        const projectAgentFileContent = fs.readFileSync(projectAgentFilePath, 'utf-8');
+        const indexFileContent = fs.readFileSync(indexFilePath, 'utf-8');
+
+        await fs.writeFileSync(path.join(declarations, `${projectName}_backend.did.js`), projectAgentFileContent);
+        await fs.writeFileSync(path.join(declarations, 'index.js'), indexFileContent);
+
+        const replacementText = `${projectName}_backend`;
+        const replacedFile = path.resolve(declarations, "index.js");
+        let fileContent = await fs.readFileSync(replacedFile, 'utf8');
+        fileContent = fileContent.replace(/project_backend/g, replacementText);
+        fileContent = fileContent.replace(/PROJECT_BACKEND/g, replacementText.toUpperCase());
+        fileContent = fileContent.replace(/agent_backend/g, replacementText);
+
+        fs.writeFileSync(replacedFile, fileContent, 'utf8');
+        await execSync(" npm i @dfinity/agent");
     } catch (error) {
         console.log(error);
     }

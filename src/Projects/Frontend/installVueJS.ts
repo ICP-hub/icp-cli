@@ -71,7 +71,11 @@ export const installVueFrontend = async (projectName: String, projectPath: Strin
     await fs.copyFileSync(IcpLogo, path.join(publicPath, "logo2.svg"));
     await fs.copyFileSync(mainFile, path.join(srcPath, "main.js"));
 
-    console.log("Files replaced successfully.");
+    const destFile = path.join(srcPath, "App.vue");
+    const replacementText = `${projectName}_backend`;
+    let fileContent = fs.readFileSync(destFile, 'utf8');
+    fileContent = fileContent.replace(/project_backend/g, replacementText);
+    fs.writeFileSync(destFile, fileContent, 'utf8');
   } catch (err) {
     console.error("Error initializing npm:", err);
   }

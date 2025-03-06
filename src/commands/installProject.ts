@@ -46,11 +46,7 @@ export async function createIcpProject(projectName: String, backendLanguage: Str
       "output_env_file": ".env",
       "version": 1,
     };
-
-    if (!projectName) {
-      console.error("Please provide a project name.");
-      return;
-    } else if (backendLanguage == "Rust") {
+    if (backendLanguage == "Rust") {
       await installRustBakend(projectName, projectPath, dfxJson);
       if (frontendLanguage == "React") {
         await installReactFrontend(projectName, projectPath);

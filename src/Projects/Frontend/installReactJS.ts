@@ -57,7 +57,7 @@ export const installReactFrontend = async (projectName: String, projectPath: Str
         const frontendPath = path.resolve(projectPath, `src/${projectName}_frontend`);
         const srcPath = path.join(frontendPath, "src");
         const publicPath = path.join(frontendPath, "public");
-
+        const destFile = path.join(srcPath, "App.jsx");
         if (!fs.existsSync(srcPath)) fs.mkdirSync(srcPath, { recursive: true });
         if (!fs.existsSync(publicPath)) fs.mkdirSync(publicPath, { recursive: true });
 
@@ -66,8 +66,10 @@ export const installReactFrontend = async (projectName: String, projectPath: Str
         await fs.copyFileSync(ICPAppfile, path.join(srcPath, "App.jsx")); 
         await fs.copyFileSync(IcpLogo, path.join(publicPath, "logo2.svg")); 
         await fs.copyFileSync(mainFile, path.join(srcPath, "main.jsx")); 
-
-        console.log("Files replaced successfully.");
+        const replacementText = `${projectName}_backend`;
+        let fileContent = fs.readFileSync(destFile, 'utf8');
+        fileContent = fileContent.replace(/project_backend/g, replacementText);
+        fs.writeFileSync(destFile, fileContent, 'utf8');
     } catch (err) {
         console.error("Error initializing npm:", err);
     }

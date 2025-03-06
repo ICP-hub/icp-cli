@@ -1,9 +1,9 @@
 {
-  "name": "icp-cli",
+  "name": "icp-ok",
   "version": "0.10",
-  "description": "icp-cli on JS",
+  "description": "icp-ok on JS",
   "bin": {
-    "icp-cli": "./dist/bin/cli.js"
+    "icp-ok": "./dist/bin/cli.js"
   },
   "scripts": {
     "start": "ts-node ./src/bin/cli.ts",

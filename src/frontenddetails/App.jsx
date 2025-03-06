@@ -1,12 +1,15 @@
 import { useState } from 'react';
+import { project_backend } from '../../declarations/project_backend';
 
 function App() {
   const [greeting, setGreeting] = useState('');
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const name = event.target.elements.name.value;
-    setGreeting(name);
+    await project_backend.greet(name).then((greeting) => {
+      setGreeting(greeting);
+    });
     return false;
   }
 
@@ -20,9 +23,7 @@ function App() {
         <input id="name" alt="Name" type="text" />
         <button type="submit">Click Me!</button>
       </form>
-      {
-        greeting && <section id="greeting">hello! {greeting}</section>
-      }
+      <section id="greeting">{greeting}</section>
     </main>
   );
 }
