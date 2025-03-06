@@ -22,7 +22,7 @@ program
   .action(async () => {
     await checkDependencies();
     const isDeployed = await isAlreadyDeployed();
-    if(isDeployed){
+    if(isDeployed === true){
       await createAndInstallCanisters();
     }else{
       await checkAndCutUserCycles();

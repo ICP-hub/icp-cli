@@ -88,7 +88,6 @@ export const numberOfCanisters = async (): Promise<number> => {
         const dfxConfig = JSON.parse(data);
         const canisters = dfxConfig.canisters;
         const canisterCount = Object.keys(canisters).length;
-        console.log("canisterCount ", canisterCount);
         return canisterCount;
     } catch (error) {
         console.log("error ", error);
@@ -97,7 +96,7 @@ export const numberOfCanisters = async (): Promise<number> => {
 };
 
 export const isAlreadyDeployed = async (): Promise<boolean> => {
-    const dfxFilePath = path.resolve("canisterid.json");
+    const dfxFilePath = path.resolve(process.cwd(), "canisterid.json");
     try {
         await fs.access(dfxFilePath);
     } catch {
@@ -106,7 +105,11 @@ export const isAlreadyDeployed = async (): Promise<boolean> => {
     try {
         const data = await fs.readFile(dfxFilePath, "utf-8");
         const dfxConfig = JSON.parse(data);
-        return dfxConfig.canisters && Object.keys(dfxConfig.canisters).length > 0;
+        if(Object.keys(dfxConfig).length > 0){
+            return true;
+        }else{
+            return false;
+        }
     } catch (error) {
         console.error("Error reading or parsing canisterid.json:", error);
         return false;
