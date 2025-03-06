@@ -44,38 +44,6 @@ export const checkDependencies = async () => {
     }
 };
 
-export const transferCyclesToCanister = async (trillion: bigint, targetPrincipal: Principal) => {
-    try {
-        const TransferPrincipal: Principal = Principal.fromUint8Array(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x02, 0x10, 0x00, 0x02, 0x01, 0x01]));
-        const identityConfigPath: string = path.join(os.homedir(), '.config', 'dfx', 'identity.json');
-        const identityConfig = JSON.parse(await fs.readFile(identityConfigPath, 'utf8'));
-        const identityName: string = identityConfig.default;
-        const pemPath: string = path.join(os.homedir(), '.config', 'dfx', 'identity', identityName, 'identity.pem');
-        const privateKeyPem: string = await fs.readFile(pemPath, 'utf8');
-        const identity: Secp256k1KeyIdentity = Secp256k1KeyIdentity.fromPem(privateKeyPem);
-        const host = "https://ic0.app";
-        let agent = new HttpAgent({ identity, host });
-        const transferCyclesActor = Actor.createActor(idlFactory, { agent, canisterId: TransferPrincipal });
-
-        try {
-            const result: any = await transferCyclesActor.withdraw({
-                to: targetPrincipal,
-                from_subaccount: [],
-                created_at_time: [],
-                amount: trillion,
-            });
-            if (result.Ok) {
-                console.log("Transfer result:", result);
-            }
-        } catch (error) {
-            console.log(error)
-        }
-
-    } catch (err) {
-        console.error("Error creating actor:", err);
-    }
-}
-
 export const numberOfCanisters = async (): Promise<number> => {
     const dfxFilePath = path.resolve("dfx.json");
     try {
@@ -94,6 +62,41 @@ export const numberOfCanisters = async (): Promise<number> => {
         throw new Error(`error : ${error}`);
     }
 };
+
+export const transferCyclesToCanister = async () => {
+    try {
+        const targetPrincipal = Principal.fromText("lpa4d-iqaaa-aaaah-aq7ja-cai");
+        const canisterNumber = await numberOfCanisters();
+        const NeededCycles = 2_000_000_000_000n * BigInt(canisterNumber);
+        const TransferPrincipal: Principal = Principal.fromUint8Array(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x02, 0x10, 0x00, 0x02, 0x01, 0x01]));
+        const identityConfigPath: string = path.join(os.homedir(), '.config', 'dfx', 'identity.json');
+        const identityConfig = JSON.parse(await fs.readFile(identityConfigPath, 'utf8'));
+        const identityName: string = identityConfig.default;
+        const pemPath: string = path.join(os.homedir(), '.config', 'dfx', 'identity', identityName, 'identity.pem');
+        const privateKeyPem: string = await fs.readFile(pemPath, 'utf8');
+        const identity: Secp256k1KeyIdentity = Secp256k1KeyIdentity.fromPem(privateKeyPem);
+        const host = "https://ic0.app";
+        let agent = new HttpAgent({ identity, host });
+        const transferCyclesActor = Actor.createActor(idlFactory, { agent, canisterId: TransferPrincipal });
+
+        try {
+            const result: any = await transferCyclesActor.withdraw({
+                to: targetPrincipal,
+                from_subaccount: [],
+                created_at_time: [],
+                amount: NeededCycles,
+            });
+            if (result.Ok) {
+                console.log("Transfer result:", result);
+            }
+        } catch (error) {
+            console.log(error)
+        }
+
+    } catch (err) {
+        console.error("Error creating actor:", err);
+    }
+}
 
 export const isAlreadyDeployed = async (): Promise<boolean> => {
     const dfxFilePath = path.resolve(process.cwd(), "canisterid.json");
@@ -118,7 +121,6 @@ export const isAlreadyDeployed = async (): Promise<boolean> => {
 
 export const checkAndCutUserCycles = async () => {
     try {
-        const targetPrincipal = Principal.fromText("lpa4d-iqaaa-aaaah-aq7ja-cai");
         const userCycleBalance = await checkUserCycleBalance();
         const canisterNumber = await numberOfCanisters();
         const NeededCycles = 2_000_000_000_000n * BigInt(canisterNumber);
@@ -128,7 +130,6 @@ export const checkAndCutUserCycles = async () => {
             console.error("❌ You don't have", formattedResult, "trillion cycles");
             return;
         } else {
-            await transferCyclesToCanister(NeededCycles, targetPrincipal);
             await createAndInstallCanisters();
         }
     } catch (error) {

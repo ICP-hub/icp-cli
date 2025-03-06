@@ -7,6 +7,7 @@ import { Principal } from "@dfinity/principal";
 import { IDL } from "@dfinity/candid";
 import getActor from "./getActor.js";
 import { createCanisterActor, getIdentity } from "../canisterActor/authClient.js";
+import { transferCyclesToCanister } from "../validators/validators.js";
 
 const { execSync } = require("child_process");
 dotenv.config();
@@ -213,29 +214,48 @@ export async function createAndInstallCanisters() {
             installMode = "reInstall";
             const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId.toText()}\n`;
             const envFilePath = path.join(process.cwd(), '.env');
-            if (fs.existsSync(envFilePath)) {
-              fs.appendFileSync(envFilePath, envData);
-            } else {
-              fs.writeFileSync(envFilePath, envData);
+            const fileContent = fs.readFileSync(envFilePath, { encoding: 'utf-8' });
+            const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
+            if (!fileContent.includes(variableKey)) {
+              if (fs.existsSync(envFilePath)) {
+                fs.appendFileSync(envFilePath, envData);
+              } else {
+                fs.writeFileSync(envFilePath, envData);
+              }
             }
           } else if (canister.category == "frontend") {
             let canisterName = canister.name;
             newCanisterId = Principal?.fromText(dfxConfig[canisterName])
             installMode = "reInstall";
             const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId.toText()}\n`;
+            const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
             const envFilePath = path.join(process.cwd(), '.env');
+            const fileContent = fs.readFileSync(envFilePath, { encoding: 'utf-8' });
+            if (!fileContent.includes(variableKey)) {
+              if (fs.existsSync(envFilePath)) {
+                fs.appendFileSync(envFilePath, envData);
+              } else {
+                fs.writeFileSync(envFilePath, envData);
+              }
+            }
+          }
+        } else {
+          await transferCyclesToCanister();
+          let canisterName = canister.name;
+          const actor = await createCanisterActor();
+          let data: any = await actor?.get_canister_id();
+          newCanisterId = data.Ok;
+          const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_BACKEND=${newCanisterId.toText()}\n`;
+          const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
+          const envFilePath = path.join(process.cwd(), '.env');
+          const fileContent = fs.readFileSync(envFilePath, { encoding: 'utf-8' });
+          if (!fileContent.includes(variableKey)) {
             if (fs.existsSync(envFilePath)) {
               fs.appendFileSync(envFilePath, envData);
             } else {
               fs.writeFileSync(envFilePath, envData);
             }
           }
-        } else {
-          // const actor = await createCanisterActor();
-          // let data: any = await actor?.get_canister_id();
-          // newCanisterId = data.Ok;
-          // const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_BACKEND=${newCanisterId.toText()}\n`;
-          // fs.writeFileSync(path.join(process.cwd(), '.env'), envData);
         }
       } catch (error) {
         console.log("error detucted : ", error);

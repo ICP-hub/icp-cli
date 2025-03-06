@@ -27,6 +27,7 @@ export const installVueFrontend = async (projectName: String, projectPath: Strin
   fs.writeFileSync(path.join(projectPath, "package.json"), packageJson.trim());
   const command = `npm create vite@latest ${projectName}_frontend -- --template vue`;
   const installNodeModule = `npm install`;
+  const agentInstall = `npm i @dfinity/agent`;
   try {
     await execSync(command, {
       cwd: `${projectPath}/src`,
@@ -39,7 +40,11 @@ export const installVueFrontend = async (projectName: String, projectPath: Strin
       stdio: "inherit",
       shell: true,
     });
-
+    await execSync(agentInstall, {
+      cwd: `${projectPath}`,
+      stdio: "inherit",
+      shell: true,
+  });
     await execSync("npm install -D sass-embedded", {
       cwd: `${projectPath}`,
       stdio: "inherit",

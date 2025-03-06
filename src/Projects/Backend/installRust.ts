@@ -75,7 +75,6 @@ fn greet(name: String) -> String {
         fileContent = fileContent.replace(/agent_backend/g, replacementText);
 
         fs.writeFileSync(replacedFile, fileContent, 'utf8');
-        await execSync(" npm i @dfinity/agent");
     } catch (error) {
         console.log(error);
     }

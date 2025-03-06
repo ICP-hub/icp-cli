@@ -28,19 +28,23 @@ export const installReactFrontend = async (projectName: String, projectPath: Str
     const command =
         `npm create vite@latest ${projectName}_frontend -- --template react `;
     const installNodeModule = `npm install`;
+    const agentInstall = `npm i @dfinity/agent`;
     try {
         await execSync(command, {
             cwd: `${projectPath}/src`,
             stdio: "inherit",
             shell: true,
         });
-
         await execSync(installNodeModule, {
             cwd: `${projectPath}`,
             stdio: "inherit",
             shell: true,
         });
-
+        await execSync(agentInstall, {
+            cwd: `${projectPath}`,
+            stdio: "inherit",
+            shell: true,
+        });
         await execSync("npm install -D sass-embedded",{
              cwd: `${projectPath}`,
             stdio: "inherit",
