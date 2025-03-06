@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { project_backend } from '../../declarations/project_backend';
+import { project_backend } from '../../declarations/project_backend/index.js';
 
 function App() {
   const [greeting, setGreeting] = useState('');
@@ -7,15 +7,18 @@ function App() {
   async function handleSubmit(event) {
     event.preventDefault();
     const name = event.target.elements.name.value;
-    await project_backend.greet(name).then((greeting) => {
-      setGreeting(greeting);
-    });
+    const backendActor = await project_backend();
+    console.log("backendActors",backendActor);
+
+    const greeting = await backendActor.greet(name);
+    console.log("greeting:", greeting);
+    setGreeting(greeting);
     return false;
   }
 
   return (
     <main>
-      <img src="/logo2.svg" alt="DFINITY logo" />
+      <img src="/logo2.svg" alt="ICP-CLI logo" />
       <br />
       <br />
       <form action="#" onSubmit={handleSubmit}>

@@ -7,7 +7,8 @@ import { Principal } from "@dfinity/principal";
 import { IDL } from "@dfinity/candid";
 import getActor from "./getActor.js";
 import { createCanisterActor, getIdentity } from "../canisterActor/authClient.js";
-import { transferCyclesToCanister } from "../validators/validators.js";
+import { setCanisterId, transferCyclesToCanister } from "../validators/validators.js";
+import { getCurrentPrincipal } from "../identity/getPrincipal.js";
 
 const { execSync } = require("child_process");
 dotenv.config();
@@ -212,6 +213,7 @@ export async function createAndInstallCanisters() {
             let canisterName = canister.name;
             if (dfxConfig[canisterName]) {
               newCanisterId = Principal?.fromText(dfxConfig[canisterName]);
+              await setCanisterId(newCanisterId, canister.name)
               installMode = "reInstall";
               const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId.toText()}\n`;
               const envFilePath = path.join(process.cwd(), '.env');
@@ -233,7 +235,8 @@ export async function createAndInstallCanisters() {
               const actor = await createCanisterActor();
               let data: any = await actor?.get_canister_id();
               newCanisterId = data.Ok;
-              const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_BACKEND=${newCanisterId?.toText()}\n`;
+              await setCanisterId(newCanisterId, canister.name)
+              const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
               const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
 
               const envFilePath = path.join(process.cwd(), '.env');
@@ -276,7 +279,7 @@ export async function createAndInstallCanisters() {
               const actor = await createCanisterActor();
               let data: any = await actor?.get_canister_id();
               newCanisterId = data.Ok;
-              const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_BACKEND=${newCanisterId?.toText()}\n`;
+              const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
               const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
 
               const envFilePath = path.join(process.cwd(), '.env');
@@ -300,7 +303,10 @@ export async function createAndInstallCanisters() {
           const actor = await createCanisterActor();
           let data: any = await actor?.get_canister_id();
           newCanisterId = data.Ok;
-          const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_BACKEND=${newCanisterId?.toText()}\n`;
+          if(canister.category == "backend"){
+            await setCanisterId(newCanisterId, canister.name)
+          }
+          const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
           const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
 
           const envFilePath = path.join(process.cwd(), '.env');
@@ -321,9 +327,7 @@ export async function createAndInstallCanisters() {
         console.log("error detucted : ", error);
       }
       if (newCanisterId && canister.name) {
-        await updateCanisterDataFile(
-          canister.name,
-          newCanisterId);
+        await updateCanisterDataFile(canister.name,newCanisterId);
       }
 
       if (canister.category === "backend") {
@@ -376,13 +380,13 @@ async function install(
       throw new Error(`WASM file not found: ${wasmPath}`);
     }
 
+    const UserPrincipal = await getCurrentPrincipal();
+
     const wasmBuffer = await fs.promises.readFile(wasmPath);
     const wasmModule = new Uint8Array(wasmBuffer);
 
     const initArgs = {
-      owner: Principal.fromText(
-        "6ydm4-srext-xsaic-y3v2x-cticp-5n6pf-2meh7-j43r6-rghg7-pt5nd-bqe"
-      ),
+      owner: UserPrincipal,
       name: "assetstorage.wasm",
     };
 

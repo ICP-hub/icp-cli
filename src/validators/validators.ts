@@ -108,7 +108,7 @@ export const isAlreadyDeployed = async (): Promise<boolean> => {
     try {
         const data = await fs.readFile(dfxFilePath, "utf-8");
         const dfxConfig = JSON.parse(data);
-        if(Object.keys(dfxConfig).length > 0){
+        if(Object.keys(dfxConfig).length > 0) {
             return true;
         }else{
             return false;
@@ -136,3 +136,16 @@ export const checkAndCutUserCycles = async () => {
         console.error("❌ Error in checkAndCutUserCycles:", error);
     }
 };
+
+export const setCanisterId = async (
+    newCanisterIdValue: Principal,
+    projectName: string
+  ) => {
+    const indexFilePath = path.resolve(process.cwd(), `src/declarations/${projectName}/index.js`);
+    let fileContent = await fs.readFile(indexFilePath, "utf8");
+    fileContent = fileContent.replace(
+      /const\s+canisterId\s*=\s*["'`].*?["'`];/,
+      `const canisterId = "${newCanisterIdValue}";`
+    );
+    await fs.writeFile(indexFilePath, fileContent, "utf8");
+  };

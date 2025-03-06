@@ -1,21 +1,30 @@
 <script setup>
 import { ref } from 'vue';
-import { project_backend } from '../../declarations/project_backend';
+import { project_backend } from '../../declarations/project_backend/index.js';
 let greeting = ref('');
 
 async function handleSubmit(e) {
   e.preventDefault();
-  const target = e.target;
-  const name = target.querySelector('#name').value;
-  await project_backend.greet(name).then((response) => {
+  event.preventDefault();
+  
+  try {
+    const name = event.target.elements.name.value;
+    const backendActor = await project_backend();
+    console.log("backendActor:", backendActor);
+
+    const response = await backendActor?.greet(name);
+    console.log("greeting:", response);
+
     greeting.value = response;
-    });
+  } catch (error) {
+    console.error("Error in handleSubmit:", error);
+  }
 }
 </script>
 
 <template>
   <main>
-    <img src="/logo2.svg" alt="DFINITY logo" />
+    <img src="/logo2.svg" alt="ICP-CLI logo" />
     <br />
     <br />
     <form action="#" @submit="handleSubmit">
