@@ -27,7 +27,7 @@ With this package, users can :
 
 ## How to Use icp-test  
 
-### icp-test Commands  
+### icp-cli Commands  
 
 - `new <projectName>` – Creates a new ICP project.  
 - `deploy` – Deploys canisters on the mainnet.  
@@ -58,7 +58,7 @@ Before using this project, ensure you have the following installed:
 
 1. Install package :  
  ```bash  
- npm i -g icp-test
+ npm i -g icp-cli
 ```
 1. Clone the repository: 
  ```bash  
