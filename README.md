@@ -62,7 +62,7 @@ Before using this project, ensure you have the following installed:
 ```
 1. Clone the repository: 
  ```bash  
- git clone https://github.com/ICP-hub/dfx-node
+ git clone https://github.com/ICP-hub/icp-cli.git
 ```
 
 2. run dependencies:  
