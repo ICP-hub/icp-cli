@@ -59,6 +59,25 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
       });
     };
 
+    const copyMotokoWasmFile = async (name: string) => {
+      try {
+        const backendDid = path.resolve(__dirname, "../../src/res/project_backend.did");
+        const didFilePath = path.resolve("src", "declarations", name, `${name}.did`);
+        if (!fs.existsSync(didFilePath)) {
+          fs.mkdirSync(path.dirname(didFilePath), { recursive: true });
+          fs.copyFileSync(backendDid, didFilePath);
+        }
+        const newDidFilePath =
+        path.resolve(".dfx", "ic", "canisters", name, `${name}.did`);
+        if (!fs.existsSync(newDidFilePath)) {
+          fs.mkdirSync(path.dirname(newDidFilePath), { recursive: true });
+          fs.copyFileSync(backendDid, newDidFilePath);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     const canisterDetails = await Promise.all(
       Object.keys(canisters).map(async (name) => {
         const type = canisters[name]?.type || "unknown";
@@ -79,13 +98,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           if (!fs.existsSync(didFilePath)) {
             throw new Error(`DID file not found: ${didFilePath}`);
           }
-
-          const newDidFilePath = path.resolve(
-            "target",
-            "wasm32-unknown-unknown",
-            "release",
-            didFileName
-          );
+          const wasmPath = path.resolve("src", name, `${name}.wasm`);
 
           const newDidFilePath2 = path.resolve(
             ".dfx",
@@ -95,7 +108,6 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
             "service.did"
           );
 
-          fs.copyFileSync(didFilePath, newDidFilePath);
           fs.copyFileSync(didFilePath, newDidFilePath2);
 
           const wasmFilePath = path.resolve(
@@ -105,12 +117,6 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
             `${name.replace(/-/g, '_')}.wasm`
           );
 
-          const outputWasmPath = path.resolve(
-            "target",
-            "wasm32-unknown-unknown",
-            "release",
-            "output.wasm"
-          );
 
           const newWasmPath = path.resolve(
             ".dfx",
@@ -125,7 +131,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           }
 
           execSync(
-            `ic-wasm "${wasmFilePath}" -o "${outputWasmPath}" metadata candid:service -f "${newDidFilePath}" -v public`,
+            `ic-wasm "${wasmFilePath}" -o "${wasmPath}" metadata candid:service -f "${newDidFilePath2}" -v public`,
             { stdio: "inherit" }
           );
 
@@ -134,11 +140,20 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
             { stdio: "inherit" }
           );
 
-          if (!fs.existsSync(outputWasmPath)) {
-            throw new Error(`Output WASM file not created: ${outputWasmPath}`);
-          }
 
-          wasmPath = outputWasmPath;
+          wasmPath;
+        } else if (type == "motoko") {
+          console.log("Building Motoko project...", name);
+          const rootPath = path.join(process.cwd());
+          const buildCommand = "moc -o mot_backend.wasm main.mo";
+          // execSync(buildCommand, {
+          //   cwd: `${rootPath}/src/${name}`,
+          //   stdio: "inherit",
+          //   shell: true,
+          // });
+          await copyMotokoWasmFile(name);
+          const wasmFilePath = path.resolve("src", name, `${name.replace(/-/g, '_')}.wasm`);
+          wasmPath = wasmFilePath;
         } else {
           frontendIdlFactoryPath = path.resolve(
             "src",
@@ -167,7 +182,8 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
   }
 };
 
-async function createAgent(): Promise<HttpAgent> {
+
+export async function createAgent(): Promise<HttpAgent> {
   let identity: any;
   try {
     identity = await getIdentity();
@@ -233,7 +249,8 @@ export async function createAndInstallCanisters() {
             } else {
               let canisterName = canister.name;
               const actor = await createCanisterActor();
-              let data: any = await actor?.get_canister_id();
+              // let data: any = await actor?.get_canister_id();
+              let data: any = {};
               newCanisterId = data.Ok;
               await setCanisterId(newCanisterId, canister.name)
               const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
@@ -277,7 +294,8 @@ export async function createAndInstallCanisters() {
             } else {
               let canisterName = canister.name;
               const actor = await createCanisterActor();
-              let data: any = await actor?.get_canister_id();
+              // let data: any = await actor?.get_canister_id();
+              let data : any = {};
               newCanisterId = data.Ok;
               const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
               const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
@@ -300,10 +318,12 @@ export async function createAndInstallCanisters() {
         } else {
           await transferCyclesToCanister();
           let canisterName = canister.name;
-          const actor = await createCanisterActor();
-          let data: any = await actor?.get_canister_id();
+          // const actor = await createCanisterActor();
+          const actor: any = {};
+          // let data: any = await actor?.get_canister_id();
+          let data : any = {};
           newCanisterId = data.Ok;
-          if(canister.category == "backend"){
+          if (canister.category == "backend") {
             await setCanisterId(newCanisterId, canister.name)
           }
           const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
@@ -327,10 +347,10 @@ export async function createAndInstallCanisters() {
         console.log("error detucted : ", error);
       }
       if (newCanisterId && canister.name) {
-        await updateCanisterDataFile(canister.name,newCanisterId);
+        await updateCanisterDataFile(canister.name, newCanisterId);
       }
 
-      if (canister.category === "backend") {
+      if (canister.name === "backend") {
         await install(managementCanister, newCanisterId, canister.wasmPath, installMode);
         console.log(`\x1b[1mCreated backend canister:\x1b[0m \x1b[1;34mhttps://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=${newCanisterId}\x1b[0m`);
       } else {
@@ -379,7 +399,7 @@ async function install(
     if (!fs.existsSync(wasmPath)) {
       throw new Error(`WASM file not found: ${wasmPath}`);
     }
-
+    console.log("wasmPath",wasmPath);
     const UserPrincipal = await getCurrentPrincipal();
 
     const wasmBuffer = await fs.promises.readFile(wasmPath);

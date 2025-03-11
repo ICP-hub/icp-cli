@@ -14,6 +14,13 @@ import { createUserIdentity } from "../identity/createIdentity";
 import { getCurrentPrincipal } from "../identity/getPrincipal";
 import { useIdentity } from "../identity/useIdentity";
 import { checkAndCutUserCycles, checkDependencies, isAlreadyDeployed } from "../validators/validators";
+import { canisterStatus, createCanisterControllers, listCanisterControllers } from "../controllers/createControllers";
+import { Principal } from "@dfinity/principal";
+import { listAllIdentities } from "../identity/listIdentity";
+import { stopCanister } from "../controllers/stopCanister";
+import { deleteCanister } from "../controllers/deleteCanister";
+import { unInstallCanisterCode } from "../controllers/unInstallCode";
+import { startCanister } from "../controllers/startCanister";
 
 
 program
@@ -22,9 +29,9 @@ program
   .action(async () => {
     await checkDependencies();
     const isDeployed = await isAlreadyDeployed();
-    if(isDeployed === true){
+    if (isDeployed === true) {
       await createAndInstallCanisters();
-    }else{
+    } else {
       await checkAndCutUserCycles();
     }
   });
@@ -72,6 +79,55 @@ program
   });
 
 program
+  .command("create-controller <canisterId> <controllerId>")
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (canisterId: string, controllerId: string) => {
+    await createCanisterControllers(canisterId, controllerId);
+  });
+
+program
+  .command("list-controllers <canisterId>")
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (canisterId: string) => {
+    await listCanisterControllers(canisterId);
+  });
+
+program
+  .command("canister-status <canisterId>")
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (canisterId: string) => {
+    await canisterStatus(canisterId);
+  });
+
+program
+  .command("start-canister <canisterId>")
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (canisterId: string) => {
+    await startCanister(canisterId);
+  });
+
+program
+  .command("stop-canister <canisterId>")
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (canisterId: string) => {
+    await stopCanister(canisterId);
+  });
+
+program
+  .command("uninstall-code <canisterId>")
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (canisterId: string) => {
+    await unInstallCanisterCode(canisterId);
+  });
+
+// program
+//   .command("delete-canister <canisterId>")
+//   .description('Cycles Faucet Coupon Code for deploy project')
+//   .action(async (canisterId: string) => {
+//     await deleteCanister(canisterId);
+//   });
+
+program
   .command('cycles-balance [PrincipalId]')
   .description('used to check the user cycles balance')
   .action(async (PrincipalId?: string,) => {
@@ -91,6 +147,15 @@ program
   .action(async () => {
     await getCurrentPrincipal();
   });
+
+program
+  .command('list-identity')
+  .description('Used to get the Principal id of the currently active identity')
+  .action(async () => {
+    await listAllIdentities();
+  });
+
+
 
 program
   .command('identity-use <identityName>')
