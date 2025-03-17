@@ -56,7 +56,7 @@ export const installVueFrontend = async (projectName: String, projectPath: Strin
       stdio: "inherit",
       shell: true,
     })
-
+    await execSync("npm install @infu/icblast")
     const IcpLogo = path.resolve(__dirname, "../../../src/viewJsFrontendDetails/logo2.svg");
     const ICPAppfile = path.resolve(__dirname, "../../../src/viewJsFrontendDetails/App.vue");
     const indexhtmlFile = path.resolve(__dirname, "../../../src/viewJsFrontendDetails/index.html");

@@ -33,6 +33,11 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
     const dfxConfig = JSON.parse(data);
     const canisters = dfxConfig.canisters || {};
 
+    await execSync("npm install @infu/icblast", {
+      cwd: process.cwd(),
+      stdio: "ignore",
+      shell: true,
+    })
 
     const assetstorageDid = path.resolve(__dirname, "../../src/res/assetstorage.did");
 
@@ -61,14 +66,14 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
     const copyMotokoWasmFile = async (name: string) => {
       try {
-        const backendDid = path.resolve(__dirname, "../../src/res/project_backend.did");
+        const backendDid = path.resolve(process.cwd(), "src", name, `${name}.did`);
         const didFilePath = path.resolve("src", "declarations", name, `${name}.did`);
         if (!fs.existsSync(didFilePath)) {
           fs.mkdirSync(path.dirname(didFilePath), { recursive: true });
           fs.copyFileSync(backendDid, didFilePath);
         }
         const newDidFilePath =
-        path.resolve(".dfx", "ic", "canisters", name, `${name}.did`);
+          path.resolve(".dfx", "ic", "canisters", name, `${name}.did`);
         if (!fs.existsSync(newDidFilePath)) {
           fs.mkdirSync(path.dirname(newDidFilePath), { recursive: true });
           fs.copyFileSync(backendDid, newDidFilePath);
@@ -81,7 +86,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
     const canisterDetails = await Promise.all(
       Object.keys(canisters).map(async (name) => {
         const type = canisters[name]?.type || "unknown";
-        const category = type === "rust" ? "backend" : "frontend";
+        const category = type === "rust" || type === "motoko" ? "backend" : "frontend";
         let wasmPath = "";
         let frontendIdlFactoryPath: string | undefined;
 
@@ -94,21 +99,26 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
 
           const didFileName = `${name}.did`;
           const didFilePath = path.resolve("src", name, didFileName);
+          const didFilePath2 = path.resolve("src", "declarations", name, didFileName);
 
           if (!fs.existsSync(didFilePath)) {
             throw new Error(`DID file not found: ${didFilePath}`);
           }
-          const wasmPath = path.resolve("src", name, `${name}.wasm`);
 
-          const newDidFilePath2 = path.resolve(
-            ".dfx",
-            "ic",
-            "canisters",
-            name,
-            "service.did"
-          );
+          const newDidFilePath2 = path.resolve(".dfx", "ic", "canisters", name, `${name}.did`);
 
           fs.copyFileSync(didFilePath, newDidFilePath2);
+
+          if (!fs.existsSync(didFilePath2)) {
+            try {
+              fs.mkdirSync(path.dirname(didFilePath2), { recursive: true });
+              fs.copyFileSync(newDidFilePath2, didFilePath2);
+            } catch (err) {
+              console.error(`Failed to copy assetstorage.did to ${didFilePath2}: ${err}`);
+            }
+          } else {
+            fs.copyFileSync(newDidFilePath2, didFilePath2);
+          }
 
           const wasmFilePath = path.resolve(
             "target",
@@ -131,7 +141,7 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           }
 
           execSync(
-            `ic-wasm "${wasmFilePath}" -o "${wasmPath}" metadata candid:service -f "${newDidFilePath2}" -v public`,
+            `ic-wasm "${wasmFilePath}" -o "${newWasmPath}" metadata candid:service -f "${newDidFilePath2}" -v public`,
             { stdio: "inherit" }
           );
 
@@ -141,19 +151,20 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           );
 
 
-          wasmPath;
+          wasmPath = newWasmPath;
         } else if (type == "motoko") {
           console.log("Building Motoko project...", name);
-          const rootPath = path.join(process.cwd());
-          const buildCommand = "moc -o mot_backend.wasm main.mo";
-          // execSync(buildCommand, {
-          //   cwd: `${rootPath}/src/${name}`,
-          //   stdio: "inherit",
-          //   shell: true,
-          // });
+          let mainPath = canisters[name].main;
+          const buildCommand = `moc ${mainPath} -o src/${name}/${name}.wasm`;
+          const newWasmPath = `src/${name}/${name}.wasm`;
+          execSync(buildCommand);
+
+          const addMetaDataCommand = `moc ${mainPath} -o ${newWasmPath} -c --release --idl --stable-types --public-metadata candid:service --public-metadata candid:args --actor-idl build/idl --actor-alias ${name} ryjl3-tyaaa-aaaaa-aaaba-cai`;
+
+          execSync(addMetaDataCommand);
+
           await copyMotokoWasmFile(name);
-          const wasmFilePath = path.resolve("src", name, `${name.replace(/-/g, '_')}.wasm`);
-          wasmPath = wasmFilePath;
+          wasmPath = newWasmPath;
         } else {
           frontendIdlFactoryPath = path.resolve(
             "src",
@@ -225,6 +236,7 @@ export async function createAndInstallCanisters() {
         if (fs.existsSync(canisterIdPath)) {
           const data = await fs.promises.readFile(canisterIdPath, "utf-8");
           const dfxConfig = JSON.parse(data);
+          installMode = "reInstall";
           if (canister.category == "backend") {
             let canisterName = canister.name;
             if (dfxConfig[canisterName]) {
@@ -247,6 +259,8 @@ export async function createAndInstallCanisters() {
                 }
               }
             } else {
+              installMode = "install";
+              await transferCyclesToCanister();
               let canisterName = canister.name;
               const actor = await createCanisterActor();
               // let data: any = await actor?.get_canister_id();
@@ -272,6 +286,7 @@ export async function createAndInstallCanisters() {
             }
           } else if (canister.category == "frontend") {
             let canisterName = canister.name;
+            installMode = "reInstall";
             if (dfxConfig[canisterName]) {
               newCanisterId = Principal?.fromText(dfxConfig[canisterName])
               installMode = "reInstall";
@@ -292,10 +307,12 @@ export async function createAndInstallCanisters() {
                 }
               }
             } else {
+              installMode = "install";
+              await transferCyclesToCanister();
               let canisterName = canister.name;
               const actor = await createCanisterActor();
               // let data: any = await actor?.get_canister_id();
-              let data : any = {};
+              let data: any = {};
               newCanisterId = data.Ok;
               const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
               const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
@@ -316,12 +333,13 @@ export async function createAndInstallCanisters() {
             }
           }
         } else {
+          installMode = "install";
           await transferCyclesToCanister();
           let canisterName = canister.name;
           // const actor = await createCanisterActor();
           const actor: any = {};
           // let data: any = await actor?.get_canister_id();
-          let data : any = {};
+          let data: any = {};
           newCanisterId = data.Ok;
           if (canister.category == "backend") {
             await setCanisterId(newCanisterId, canister.name)
@@ -349,11 +367,10 @@ export async function createAndInstallCanisters() {
       if (newCanisterId && canister.name) {
         await updateCanisterDataFile(canister.name, newCanisterId);
       }
-
-      if (canister.name === "backend") {
+      if (canister.category === "backend") {
         await install(managementCanister, newCanisterId, canister.wasmPath, installMode);
         console.log(`\x1b[1mCreated backend canister:\x1b[0m \x1b[1;34mhttps://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=${newCanisterId}\x1b[0m`);
-      } else {
+      } else if (canister.category === "frontend") {
         console.log(`frontend canister is creating...`);
         await install(managementCanister, newCanisterId, canister.wasmPath, installMode);
         const filePath: any = path.resolve(process.cwd(), ".dfx", "ic", "canisters", canister.name, "assetstorage.did")
@@ -381,7 +398,6 @@ export async function createAndInstallCanisters() {
         const feActor = await getActor(agent, newCanisterId);
         await uploadFrontEndAssets(feActor, newCanisterId, canister.name);
         console.log(`\x1b[1mCode installed successfully for canister:\x1b[0m\x1b[1;34mhttps://${newCanisterId}.icp0.io/\x1b[0m`);
-
       }
     }
   } catch (error) {
@@ -396,10 +412,10 @@ async function install(
   installMode: string,
 ): Promise<void> {
   try {
+    console.log("wasmPath : ", wasmPath);
     if (!fs.existsSync(wasmPath)) {
       throw new Error(`WASM file not found: ${wasmPath}`);
     }
-    console.log("wasmPath",wasmPath);
     const UserPrincipal = await getCurrentPrincipal();
 
     const wasmBuffer = await fs.promises.readFile(wasmPath);
@@ -509,5 +525,3 @@ function getMimeType(fileName: string): string {
     return "application/octet-stream";
   }
 }
-
-

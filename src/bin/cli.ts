@@ -50,7 +50,7 @@ program
         type: 'list',
         name: 'backendLanguage',
         message: 'Select a backend language:',
-        choices: ['Rust',],
+        choices: ['Rust', 'Motoko'],
         default: 'Rust',
       },
     ]);
@@ -120,12 +120,12 @@ program
     await unInstallCanisterCode(canisterId);
   });
 
-// program
-//   .command("delete-canister <canisterId>")
-//   .description('Cycles Faucet Coupon Code for deploy project')
-//   .action(async (canisterId: string) => {
-//     await deleteCanister(canisterId);
-//   });
+program
+  .command("delete-canister <canisterId>")
+  .description('Cycles Faucet Coupon Code for deploy project')
+  .action(async (canisterId: string) => {
+    await deleteCanister(canisterId);
+  });
 
 program
   .command('cycles-balance [PrincipalId]')

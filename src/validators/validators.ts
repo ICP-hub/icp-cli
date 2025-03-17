@@ -20,23 +20,59 @@ export const isInstalled = async (cmd: string) => {
 
 export const checkDependencies = async () => {
     try {
-        const missing = [];
-        if (!(await isInstalled("ic-wasm"))) missing.push("ic-wasm");
-        if (!(await isInstalled("rustc"))) missing.push("rustc");
+        const dfxFilePath = path.resolve("dfx.json");
+        try {
+            await fs.access(dfxFilePath, fs.constants.F_OK);
+        } catch (error) {
+            throw new Error(`dfx.json file not found at ${dfxFilePath}`);
+        }
+        let backendType = "";
+        const data = await fs.readFile(dfxFilePath, "utf-8");
+        const dfxConfig = JSON.parse(data);
+        const canisters = dfxConfig.canisters || {};
 
-        if (missing.length > 0) {
-            console.error(`\n❌ Missing dependencies: ${missing.join(", ")}\n`);
-            console.error("🔧 Please install the missing dependencies using:\n");
+        for (const canisterName in canisters) {
+            const canister = canisters[canisterName];
 
-            if (missing.includes("ic-wasm")) {
-                console.error("  👉 Install ic-wasm: `cargo install ic-wasm`");
+            if (canister.type === "rust") {
+                backendType = "rust";
+            } else if (canister.type === "motoko") {
+                backendType = "motoko";
             }
-            if (missing.includes("rustc")) {
-                console.error("  👉 Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`");
-            }
+        }
+        if (backendType == "rust") {
+            const missing = [];
+            if (!(await isInstalled("ic-wasm"))) missing.push("ic-wasm");
+            if (!(await isInstalled("rustc"))) missing.push("rustc");
 
-            console.error("\nAfter installation, restart your terminal and try again.\n");
-            process.exit(1);
+            if (missing.length > 0) {
+                console.error(`\n❌ Missing dependencies: ${missing.join(", ")}\n`);
+                console.error("🔧 Please install the missing dependencies using:\n");
+
+                if (missing.includes("ic-wasm")) {
+                    console.error("👉 Install ic-wasm: `cargo install ic-wasm`");
+                }
+                if (missing.includes("rustc")) {
+                    console.error("👉 Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`");
+                }
+
+                console.error("\nAfter installation, restart your terminal and try again.\n");
+                process.exit(1);
+            }
+        } else if (backendType == "motoko") {
+            const missing = [];
+            if (!(await isInstalled("moc"))) missing.push("moc");
+            if (missing.length > 0) {
+                console.error(`\n❌ Missing dependencies: ${missing.join(", ")}\n`);
+                console.error("🔧 Please install the missing dependencies using:\n");
+
+                if (missing.includes("moc")) {
+                    console.error("👉 Install moc: `nix-env -i -f https://github.com/dfinity/motoko/archive/master.tar.gz -A moc`");
+                }
+
+                console.error("\nAfter installation, restart your terminal and try again.\n");
+                process.exit(1);
+            }
         }
     } catch (error) {
         console.error("❌ Error checking dependencies:", error);
@@ -108,9 +144,9 @@ export const isAlreadyDeployed = async (): Promise<boolean> => {
     try {
         const data = await fs.readFile(dfxFilePath, "utf-8");
         const dfxConfig = JSON.parse(data);
-        if(Object.keys(dfxConfig).length > 0) {
+        if (Object.keys(dfxConfig).length > 0) {
             return true;
-        }else{
+        } else {
             return false;
         }
     } catch (error) {
@@ -140,12 +176,59 @@ export const checkAndCutUserCycles = async () => {
 export const setCanisterId = async (
     newCanisterIdValue: Principal,
     projectName: string
-  ) => {
+) => {
     const indexFilePath = path.resolve(process.cwd(), `src/declarations/${projectName}/index.js`);
-    let fileContent = await fs.readFile(indexFilePath, "utf8");
-    fileContent = fileContent.replace(
-      /const\s+canisterId\s*=\s*["'`].*?["'`];/,
-      `const canisterId = "${newCanisterIdValue}";`
-    );
+    await fs.mkdir(path.dirname(indexFilePath), { recursive: true });
+    let fileContent = "";
+    try {
+        fileContent = await fs.readFile(indexFilePath, "utf8");
+    } catch (error: any) {
+        if (error.code !== "ENOENT") {
+            throw error;
+        }
+    }
+    if (fileContent && fileContent.match(/const\s+canisterId\s*=\s*["'`].*?["'`];/)) {
+        fileContent = fileContent.replace(
+            /const\s+canisterId\s*=\s*["'`].*?["'`];/,
+            `const canisterId = "${newCanisterIdValue}";`
+        );
+    } else {
+        try {
+            const indexFilePath = path.resolve(__dirname, "../../src/res/index.js");
+            const projectAgentFilePath =
+                path.resolve(__dirname, "../../src/res/agent_backend.did.js");
+            const projectAgentFileContent = await fs.readFile(projectAgentFilePath, 'utf-8');
+
+            const indexFileContent = await fs.readFile(indexFilePath, 'utf8');
+            const declarationsDir = path.resolve(process.cwd(), `src/declarations/${projectName}`);
+            await fs.mkdir(declarationsDir, { recursive: true });
+            const destFilePath = path.join(declarationsDir, 'index.js');
+            await fs.writeFile(destFilePath, indexFileContent, 'utf8');
+            await fs.writeFile(path.join(declarationsDir, `${projectName}.did.js`), projectAgentFileContent);
+            fileContent = await fs.readFile(destFilePath, 'utf8');
+            const replacementText = `${projectName}`;
+            fileContent = fileContent
+                .replace(/project_backend/g, replacementText)
+                .replace(/PROJECT_BACKEND/g, replacementText.toUpperCase())
+                .replace(/agent_backend/g, replacementText);
+            fileContent = fileContent.replace(
+                /const\s+canisterId\s*=\s*["'`].*?["'`];/,
+                `const canisterId = "${newCanisterIdValue}";`
+            );
+            await fs.writeFile(destFilePath, fileContent, 'utf8');
+            const packageProjectName = projectName.replace(/backend/gi, 'frontend');
+            const packageFilePath = path.resolve("src", packageProjectName, "package.json");
+            const packageFileContent = await fs.readFile(packageFilePath, 'utf8');
+            const packageJson = JSON.parse(packageFileContent);
+            if (packageJson.scripts && packageJson.scripts.prebuild) {
+                delete packageJson.scripts.prebuild;
+            }
+            const updatedContent = JSON.stringify(packageJson, null, 2);
+            await fs.writeFile(packageFilePath, updatedContent, 'utf8');
+        } catch (error) {
+            console.error("Error updating declarations file:", error);
+        }
+    }
+
     await fs.writeFile(indexFilePath, fileContent, "utf8");
-  };
+};

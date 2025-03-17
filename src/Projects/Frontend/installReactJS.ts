@@ -51,6 +51,12 @@ export const installReactFrontend = async (projectName: String, projectPath: Str
             shell: true,
         })
 
+        await execSync("npm install @infu/icblast",{
+            cwd: `${projectPath}`,
+           stdio: "inherit",
+           shell: true,
+       })
+
         const IcpLogo = path.resolve(__dirname, "../../../src/frontenddetails/logo2.svg");
         const ICPAppfile = path.resolve(__dirname, "../../../src/frontenddetails/App.jsx");
         const indexhtmlFile = path.resolve(__dirname, "../../../src/frontenddetails/index.html");
