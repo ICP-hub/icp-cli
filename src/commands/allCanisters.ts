@@ -159,6 +159,8 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
           const newWasmPath = `src/${name}/${name}.wasm`;
           execSync(buildCommand);
 
+          const exportPath = 'export PATH="$HOME/.cache/dfinity/versions/0.25.0:$PATH"'
+          execSync(exportPath);
           const addMetaDataCommand = `moc ${mainPath} -o ${newWasmPath} -c --release --idl --stable-types --public-metadata candid:service --public-metadata candid:args --actor-idl build/idl --actor-alias ${name} ryjl3-tyaaa-aaaaa-aaaba-cai`;
 
           execSync(addMetaDataCommand);
