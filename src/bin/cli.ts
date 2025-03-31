@@ -13,7 +13,7 @@ import { checkUserCycleBalance } from "../icp-balance/checkBalance";
 import { createUserIdentity } from "../identity/createIdentity";
 import { getCurrentPrincipal } from "../identity/getPrincipal";
 import { useIdentity } from "../identity/useIdentity";
-import { checkAndCutUserCycles, checkDependencies, isAlreadyDeployed } from "../validators/validators";
+import { backendLang, checkAndCutUserCycles, checkDependencies, isAlreadyDeployed } from "../validators/validators";
 import { canisterStatus, createCanisterControllers, listCanisterControllers } from "../controllers/createControllers";
 import { listAllIdentities } from "../identity/listIdentity";
 import { stopCanister } from "../controllers/stopCanister";
@@ -28,10 +28,16 @@ program
   .action(async () => {
     await checkDependencies();
     const isDeployed = await isAlreadyDeployed();
-    if (isDeployed === true) {
-      await createAndInstallCanisters();
-    } else {
-      await checkAndCutUserCycles();
+    const backendLng = await backendLang();
+    if(backendLng == "motoko" &&  process.platform == 'win32'){
+      console.log("Windows is not supported. Please use WSL")
+      return;
+    }else{
+      if (isDeployed === true) {
+        await createAndInstallCanisters();
+      } else {
+        await checkAndCutUserCycles();
+      }
     }
   });
 
@@ -44,15 +50,16 @@ program
   .command('new <projectName>')
   .description('create new ICP project')
   .action(async (projectName) => {
-    const { backendLanguage } = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'backendLanguage',
-        message: 'Select a backend language:',
-        choices: ['Rust', 'Motoko'],
-        default: 'Rust',
-      },
-    ]);
+    const backendLanguageQuestion : any = {
+      type: 'list',
+      name: 'backendLanguage',
+      message: 'Select a backend language:',
+      choices: process.platform != 'win32' ? ['Rust', 'Motoko'] : ['Rust'],
+      default: 'Rust',
+    };
+
+    const { backendLanguage } = await inquirer.prompt([backendLanguageQuestion]);
+
 
     const { frontendLanguage } = await inquirer.prompt([
       {

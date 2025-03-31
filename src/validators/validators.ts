@@ -9,6 +9,15 @@ import { promises as fs } from 'fs';
 import { idlFactory } from "../res/cyclesIdlFactory";
 const { execSync } = require("child_process");
 
+type DfxCanister = {
+    type?: string;
+    [key: string]: any;
+};
+
+type DfxJson = {
+    canisters: Record<string, DfxCanister>;
+};
+
 export const isInstalled = async (cmd: string) => {
     try {
         execSync(`${cmd} --version`, { stdio: "ignore" });
@@ -59,7 +68,7 @@ export const checkDependencies = async () => {
                 console.error("\nAfter installation, restart your terminal and try again.\n");
                 process.exit(1);
             }
-        } else if (backendType == "motoko") {
+        } else if (backendType == "motoko" && process.platform != 'win32') {
             const missing = [];
             if (!(await isInstalled("moc"))) missing.push("moc");
             if (missing.length > 0) {
@@ -96,6 +105,35 @@ export const numberOfCanisters = async (): Promise<number> => {
     } catch (error) {
         console.log("error ", error);
         throw new Error(`error : ${error}`);
+    }
+};
+
+
+
+export const backendLang = async (): Promise<string> => {
+    const dfxFilePath = path.resolve("dfx.json");
+
+    try {
+        await fs.access(dfxFilePath);
+    } catch {
+        throw new Error(`dfx.json file not found at ${dfxFilePath}`);
+    }
+
+    try {
+        const data = await fs.readFile(dfxFilePath, "utf-8");
+        const dfxConfig: DfxJson = JSON.parse(data);
+
+        for (const [_, canister] of Object.entries(dfxConfig.canisters)) {
+            const type = canister?.type || "unknown";
+            if (type === "motoko" || type === "rust") {
+                return type;
+            }
+        }
+
+        return "unknown";
+    } catch (error) {
+        console.error("Error:", error);
+        throw new Error(`Failed to read backend canister type: ${error}`);
     }
 };
 
