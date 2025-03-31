@@ -26,7 +26,7 @@ export const installReactFrontend = async (projectName: String, projectPath: Str
 
     fs.writeFileSync(path.join(projectPath, "package.json"), packageJson.trim());
     const command =
-        `npm create vite@latest ${projectName}_frontend -- --template react `;
+        `npm create vite@latest ${projectName}_frontend -- --template react -y`;
     const installNodeModule = `npm install`;
     const agentInstall = `npm i @dfinity/agent`;
     try {

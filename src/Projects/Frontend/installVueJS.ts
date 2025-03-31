@@ -25,7 +25,7 @@ export const installVueFrontend = async (projectName: String, projectPath: Strin
     `;
 
   fs.writeFileSync(path.join(projectPath, "package.json"), packageJson.trim());
-  const command = `npm create vite@latest ${projectName}_frontend -- --template vue`;
+  const command = `npm create vite@latest ${projectName}_frontend -- --template vue -y`;
   const installNodeModule = `npm install`;
   const agentInstall = `npm i @dfinity/agent`;
   try {
