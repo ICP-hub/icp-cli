@@ -1,6 +1,6 @@
 {
   "name": "icp-cli",
-  "version": "0.10",
+  "version": "0.1.5",
   "description": "icp-cli on JS",
   "bin": {
     "icp-cli": "./dist/bin/cli.js"
