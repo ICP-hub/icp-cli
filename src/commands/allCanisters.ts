@@ -155,6 +155,11 @@ export const getCanisterDetails = async (): Promise<CanisterDetail[]> => {
         } else if (type == "motoko") {
           console.log("Building Motoko project...", name);
           let mainPath = canisters[name].main;
+          await execSync("npm i mocmp", {
+            cwd: process.cwd(),
+            stdio: "ignore",
+            shell: true,
+          })
           const buildCommand = `moc ${mainPath} -o src/${name}/${name}.wasm`;
           const newWasmPath = `src/${name}/${name}.wasm`;
           execSync(buildCommand);
@@ -265,8 +270,7 @@ export async function createAndInstallCanisters() {
               await transferCyclesToCanister();
               let canisterName = canister.name;
               const actor = await createCanisterActor();
-              // let data: any = await actor?.get_canister_id();
-              let data: any = {};
+              let data: any = await actor?.get_canister_id();
               newCanisterId = data.Ok;
               await setCanisterId(newCanisterId, canister.name)
               const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
@@ -313,8 +317,7 @@ export async function createAndInstallCanisters() {
               await transferCyclesToCanister();
               let canisterName = canister.name;
               const actor = await createCanisterActor();
-              // let data: any = await actor?.get_canister_id();
-              let data: any = {};
+              let data: any = await actor?.get_canister_id();
               newCanisterId = data.Ok;
               const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
               const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
@@ -338,10 +341,8 @@ export async function createAndInstallCanisters() {
           installMode = "install";
           await transferCyclesToCanister();
           let canisterName = canister.name;
-          // const actor = await createCanisterActor();
-          const actor: any = {};
-          // let data: any = await actor?.get_canister_id();
-          let data: any = {};
+          const actor = await createCanisterActor();
+          let data: any = await actor?.get_canister_id();
           newCanisterId = data.Ok;
           if (canister.category == "backend") {
             await setCanisterId(newCanisterId, canister.name)

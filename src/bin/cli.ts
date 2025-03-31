@@ -15,7 +15,6 @@ import { getCurrentPrincipal } from "../identity/getPrincipal";
 import { useIdentity } from "../identity/useIdentity";
 import { checkAndCutUserCycles, checkDependencies, isAlreadyDeployed } from "../validators/validators";
 import { canisterStatus, createCanisterControllers, listCanisterControllers } from "../controllers/createControllers";
-import { Principal } from "@dfinity/principal";
 import { listAllIdentities } from "../identity/listIdentity";
 import { stopCanister } from "../controllers/stopCanister";
 import { deleteCanister } from "../controllers/deleteCanister";
