@@ -140,8 +140,7 @@ export const backendLang = async (): Promise<string> => {
 export const transferCyclesToCanister = async () => {
     try {
         const targetPrincipal = Principal.fromText("lpa4d-iqaaa-aaaah-aq7ja-cai");
-        const canisterNumber = await numberOfCanisters();
-        const NeededCycles = 2_000_000_000_000n * BigInt(canisterNumber);
+        const NeededCycles = 2_000_000_000_000n;
         const TransferPrincipal: Principal = Principal.fromUint8Array(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x02, 0x10, 0x00, 0x02, 0x01, 0x01]));
         const identityConfigPath: string = path.join(os.homedir(), '.config', 'dfx', 'identity.json');
         const identityConfig = JSON.parse(await fs.readFile(identityConfigPath, 'utf8'));
@@ -152,7 +151,7 @@ export const transferCyclesToCanister = async () => {
         const host = "https://ic0.app";
         let agent = new HttpAgent({ identity, host });
         const transferCyclesActor = Actor.createActor(idlFactory, { agent, canisterId: TransferPrincipal });
-
+        
         try {
             const result: any = await transferCyclesActor.withdraw({
                 to: targetPrincipal,
@@ -168,7 +167,7 @@ export const transferCyclesToCanister = async () => {
         }
 
     } catch (err) {
-        console.error("Error creating actor:", err);
+        console.error("Error ", err);
     }
 }
 
@@ -188,7 +187,7 @@ export const isAlreadyDeployed = async (): Promise<boolean> => {
             return false;
         }
     } catch (error) {
-        console.error("Error reading or parsing canisterid.json:", error);
+        console.error("Invalid JSON format. Please remove canisterid.json file");
         return false;
     }
 };

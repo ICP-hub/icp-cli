@@ -239,8 +239,22 @@ export async function createAndInstallCanisters() {
       let newCanisterId: any;
       let installMode = "install";
       try {
-        const canisterIdPath = path.resolve(process.cwd(), 'canisterid.json');
+        const canisterIdPath: any = path.resolve(process.cwd(), 'canisterid.json');
+        let data;
+        let dfxConfig;
+
         if (fs.existsSync(canisterIdPath)) {
+          try {
+            data = fs.readFileSync(canisterIdPath, "utf-8");
+            dfxConfig = JSON.parse(data);
+            console.log("Canister ID loaded successfully.");
+          } catch (error) {
+            console.error("Invalid JSON format. Please remove canisterid.json file.");
+            return;
+          }
+        }
+
+        if (fs.existsSync(canisterIdPath) && dfxConfig[canister.name]?.trim()) {
           const data = await fs.promises.readFile(canisterIdPath, "utf-8");
           const dfxConfig = JSON.parse(data);
           installMode = "reInstall";
@@ -343,25 +357,28 @@ export async function createAndInstallCanisters() {
           let canisterName = canister.name;
           const actor = await createCanisterActor();
           let data: any = await actor?.get_canister_id();
-          newCanisterId = data.Ok;
-          if (canister.category == "backend") {
+          newCanisterId = data.Ok; if (canister.category == "backend") {
             await setCanisterId(newCanisterId, canister.name)
           }
           const envData = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=${newCanisterId?.toText()}\n`;
           const variableKey = `VITE_CANISTER_ID_${canisterName.toUpperCase()}_API=`;
 
           const envFilePath = path.join(process.cwd(), '.env');
-          if (!fs.existsSync(envFilePath)) {
-            fs.writeFileSync(envFilePath, envData);
-          } else {
-            const fileContent = fs.readFileSync(envFilePath, { encoding: 'utf-8' });
-            if (!fileContent.includes(variableKey)) {
-              if (fs.existsSync(envFilePath)) {
-                fs.appendFileSync(envFilePath, envData);
-              } else {
-                fs.writeFileSync(envFilePath, envData);
+          try {
+            if (!fs.existsSync(envFilePath)) {
+              fs.writeFileSync(envFilePath, envData);
+            } else {
+              const fileContent = fs.readFileSync(envFilePath, { encoding: 'utf-8' });
+              if (!fileContent.includes(variableKey)) {
+                if (fs.existsSync(envFilePath)) {
+                  fs.appendFileSync(envFilePath, envData);
+                } else {
+                  fs.writeFileSync(envFilePath, envData);
+                }
               }
             }
+          } catch (error) {
+            console.log("error j", error)
           }
         }
       } catch (error) {
@@ -415,7 +432,6 @@ async function install(
   installMode: string,
 ): Promise<void> {
   try {
-    console.log("wasmPath : ", wasmPath);
     if (!fs.existsSync(wasmPath)) {
       throw new Error(`WASM file not found: ${wasmPath}`);
     }
